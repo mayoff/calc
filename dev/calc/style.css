@@ -57,7 +57,7 @@ BODY {
 }
 
 .button:hover {
-	background-color: #800040;
+	text-shadow: blue 0px 0px 6px, blue 0px 0px 6px;
 }
 
 .result {
