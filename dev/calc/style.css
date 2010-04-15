@@ -32,10 +32,8 @@ BODY {
 }
 
 #transcript {
+	font-size: 16px;
 	padding: 1px;
-	border-bottom-color: #a60012;
-	border-bottom-style: solid;
-	border-bottom-width: 1px;
 	height: 191px;
 	width: 318px;
 	color: black;
@@ -68,4 +66,16 @@ BODY {
 
 .button:hover {
 	background-color: #800040;
+}
+
+.result {
+	font-size: 20px;
+	float: right;
+	text-align: right;
+}
+
+.hint {
+	margin-left: 3px;
+	margin-right: 3px;
+	color: #b3b3b3;
 }
