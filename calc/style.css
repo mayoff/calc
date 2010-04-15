@@ -38,13 +38,19 @@ BODY {
 }
 
 .button {
+	max-height: 62px;
+	min-height: 62px;
+	max-width: 54px;
+	min-width: 54px;
 	text-align: center;
-	font-size: 48px;
+	vertical-align: middle;
+	font-size: 32px;
 	display: inline-block;
-	margin: 5px;
-	height: 58px;
-	width: 66px;
+	margin: 3px;
+	height: 62px;
+	width: 54px;
 	border-color: #666666;
 	border-style: solid;
 	border-width: 2px;
+	overflow: hidden;
 }
