@@ -32,12 +32,14 @@ BODY {
 }
 
 #transcript {
+	position: absolute;
 	font-size: 16px;
 	padding: 1px;
 	height: 191px;
 	width: 318px;
 	color: black;
 	background-color: white;
+	overflow: auto;
 }
 
 .button {
@@ -78,4 +80,9 @@ BODY {
 	margin-left: 3px;
 	margin-right: 3px;
 	color: #b3b3b3;
+}
+
+.equation {
+	width: 100%;
+	clear: both;
 }
