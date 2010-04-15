@@ -7,15 +7,11 @@ BODY {
 }
 
 #backdrop {
-	position: absolute;
 	color: white;
 	background-color: black;
 	padding: 0px;
 	margin: 0px;
-	height: 480px;
 	width: 320px;
-	left: 0px;
-	top: 0px;
 }
 
 #controls {
@@ -23,23 +19,17 @@ BODY {
 	border-collapse: separate;
 	padding: 0px;
 	margin: 0px;
+	width: 320px;
 	height: 288px;
-	right: 0px;
-	left: 0px;
-	bottom: 0px;
-	position: absolute;
 	-webkit-user-select: none;
 }
 
 #transcript {
-	position: absolute;
 	font-size: 16px;
 	padding: 1px;
-	height: 191px;
 	width: 318px;
 	color: black;
 	background-color: white;
-	overflow: auto;
 }
 
 .button {
