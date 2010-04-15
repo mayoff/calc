@@ -24,14 +24,6 @@ BODY {
 	-webkit-user-select: none;
 }
 
-#transcript {
-	font-size: 16px;
-	padding: 1px;
-	width: 318px;
-	color: black;
-	background-color: white;
-}
-
 .button {
 	width: 64px;
 	border-spacing: 0px 0px;
@@ -69,10 +61,20 @@ BODY {
 	text-shadow: blue 0px 0px 6px, blue 0px 0px 6px;
 }
 
+#transcript {
+	font-size: 16px;
+	padding: 0px;
+	padding-top: 192px;
+	width: 100%;
+	color: black;
+	background-color: white;
+}
+
 .result {
 	font-size: 20px;
 	float: right;
 	text-align: right;
+	padding-right: 3px;
 }
 
 .hint {
@@ -84,4 +86,12 @@ BODY {
 .equation {
 	width: 100%;
 	clear: both;
+	padding: 2px;
+	border-top: 1px solid #888;
 }
+
+.greek {
+    font-family: "Times New Roman";
+    font-style: italic;
+}
+
