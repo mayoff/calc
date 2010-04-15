@@ -19,6 +19,10 @@ BODY {
 }
 
 #controls {
+	border-spacing: 0px 0px;
+	border-collapse: separate;
+	padding: 0px;
+	margin: 0px;
 	height: 288px;
 	right: 0px;
 	left: 0px;
@@ -39,19 +43,16 @@ BODY {
 }
 
 .button {
-	max-height: 62px;
-	min-height: 62px;
-	max-width: 54px;
-	min-width: 54px;
+	width: 64px;
+	border-spacing: 0px 0px;
+	border-collapse: separate;
 	text-align: center;
 	vertical-align: middle;
 	font-size: 32px;
-	margin: 3px;
-	height: 62px;
-	width: 54px;
+	margin: 0px;
 	border-color: #666666;
 	border-style: solid;
-	border-width: 2px;
+	border-width: 0px;
 	overflow: hidden;
 }
 
@@ -63,4 +64,8 @@ BODY {
 	bottom: 0px;
 	top: 0px;
 	color: white;
+}
+
+.button:hover {
+	background-color: #800040;
 }
