@@ -27,12 +27,12 @@ BODY {
 	-webkit-user-select: none;
 }
 
-.calculation {
+#transcript {
 	padding: 1px;
-	border-bottom-color: black;
+	border-bottom-color: #a60012;
 	border-bottom-style: solid;
 	border-bottom-width: 1px;
-	height: 44px;
+	height: 191px;
 	width: 318px;
 	color: black;
 	background-color: white;
@@ -46,7 +46,6 @@ BODY {
 	text-align: center;
 	vertical-align: middle;
 	font-size: 32px;
-	display: inline-block;
 	margin: 3px;
 	height: 62px;
 	width: 54px;
@@ -54,4 +53,14 @@ BODY {
 	border-style: solid;
 	border-width: 2px;
 	overflow: hidden;
+}
+
+#basicControls {
+	height: 100%;
+	width: 100%;
+	right: 0px;
+	left: 0px;
+	bottom: 0px;
+	top: 0px;
+	color: white;
 }
