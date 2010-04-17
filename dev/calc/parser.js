@@ -1,13 +1,12 @@
-Parser = {
+if (this.console === undefined) {
+	this.console = {
+		log: function(s) { print(s); }
+	}
+}
 
-	reset: function(input) {
-		this._input = input;
-		this._inputOffset = 0;
-		this._consume();
-		return this;
-	},
+function parse(input) {
 
-	_beget: function(base, properties) {
+	function beget(base, properties) {
 		function constructor() {}
 		constructor.prototype = base;
 		var object = new constructor(), key;
@@ -15,79 +14,79 @@ Parser = {
 			object[key] = properties[key];
 		}
 		return object;
-	},
-	
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	// Lexical analysis
 
-	// The entire input string.
-	_input: null,
-	
-	// The index of the next untokenized byte in _input.
-	_inputOffset: null,
-	
-	// The current, unconsumed token.
-	_token: null,
-	
-	_consume: function() {
-		var consumed = this._token;
-		this._token = this._lex();
+	var length = input.length, offset = 0, token;
+
+	function consume() {
+		var consumed = token;
+		token = lex();
 		return consumed;
-	},
-	
-	Token: {
+	};
+
+	var Token = {
 		toString: function() {
 			return 'Token(' + this.type + ' "' + this.text + '" at ' + this.offset + ')';
 		},
 		
 		Type_End: '(end)',
-	},
-
+		Type_Number: '(number)',
+	};
 	
-	_makeToken: function(type, length) {
-		if (length === undefined) {
-			length = type.length;
+	function makeToken(type, textLength) {
+		if (textLength === undefined) {
+			textLength = type.length;
 		}
-		var token = this._beget(this.Token, {type: type, text: this._input.substr(this._inputOffset, length), offset: this._inputOffset});
-		this._inputOffset += length;
+		var token = beget(Token, {type: type, text: input.substr(offset, textLength), offset: offset});
+		offset += textLength;
 		return token;
-	},
+	}
 
-	_numberRe: /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g,
+	numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
 
-	_lex: function() {
-		var l = this._input.length, c;
-		while (this._inputOffset < l) {
-			c = this._input[this._inputOffset];
+	function lex() {
+		var c;
+		while (offset < length) {
+			c = input[offset];
 			if (c !== ' ')
 				break;
-			++this._inputOffset;
+			++offset;
 		}
-		if (this._inputOffset >= l) {
-			return this._makeToken(this.Token.Type_End, 0);
+		if (offset >= length) {
+			return makeToken(Token.Type_End, 0);
 		}
 
 		if ('+-*/()^'.indexOf(c) >= 0) {
-			return this._makeToken(c);
+			return makeToken(c);
 		}
 
 		if ('0123456789.'.indexOf(c) >= 0) {
-			this._numberRe.lastIndex = this._inputOffset;
-			return this._makeToken('number', this._numberRe.exec(this._input)[0].length);
+			numberRe.lastIndex = offset;
+			return makeToken(Token.Type_Number, numberRe.exec(input)[0].length);
 		}
 
-		throw 'Invalid character "' + c + '" at offset ' + this._inputOffset;
-	},
-	
+		throw 'Invalid character "' + c + '" at offset ' + offset;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	// Syntatic analysis
 
-	expression: function(leftOpPrecedence) {		
-		var node = this._consume().parseAsPrefix();
-		while (leftOpPrecedence < this._token.precedence) {
-			node = this._consume().parseAsInfix(node);
+	function expression(leftOpPrecedence) {		
+		var node = consume().parseAsPrefix();
+		while (leftOpPrecedence < token.precedence) {
+			node = consume().parseAsInfix(node);
 		}
 		return left;
-	},
+	}
 
-};
+	// Set token to the first token.
+	consume();
+	while (token.type !== Token.Type_End) {
+		console.log(consume().toString());
+	}
+}
+
+parse(' -123 + 4.56^.78  ');
