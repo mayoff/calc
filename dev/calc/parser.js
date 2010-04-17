@@ -19,30 +19,51 @@ function parse(input) {
 	///////////////////////////////////////////////////////////////////////////
 	// Lexical analysis
 
-	var length = input.length, offset = 0, token;
+	var length = input.length,
+		offset = 0,
+		token;
 
 	function consume() {
 		var consumed = token;
 		token = lex();
 		return consumed;
 	};
-
-	var Token = {
-		toString: function() {
-			return 'Token(' + this.type + ' "' + this.text + '" at ' + this.offset + ')';
-		},
-		
-		Type_End: '(end)',
-		Type_Number: '(number)',
+	
+	var primitiveNode = {
+		parseAsPrefix: function() { throw 'Cannot use this kind of token as a prefix/standalone.'; },
+		parseAsSuffix: function() { throw 'Cannot use this kind of token as a suffix.'; },
 	};
 	
-	function makeToken(type, textLength) {
-		if (textLength === undefined) {
-			textLength = type.length;
-		}
-		var token = beget(Token, {type: type, text: input.substr(offset, textLength), offset: offset});
+	function makeEnd() {
+		return beget(primitiveNode, {
+			toString: function() { return '(end)'; },
+			precedence: 0,
+		});
+	}
+
+	function makeNumber(textLength) {
+		var text = Number(input.substr(offset, textLength));
 		offset += textLength;
-		return token;
+		return beget(primitiveNode, {
+			toString: function() { return text; },
+			parseAsPrefix: function() { return this; },
+			precedence: 0,
+		});
+	}
+	
+	function makeInfix(precedence) {
+		var operator = input[offset];
+		++offset;
+		return beget(primitiveNode, {
+			toString: function() { return [ '(', this.lhs.toString(), ' ', this.operator, ' ', this.rhs.toString(), ')' ].join(''); },
+			operator: operator,
+			precedence: precedence,
+			parseAsSuffix: function(lhs) {
+				this.lhs = lhs;
+				this.rhs = expression(this.precedence);
+				return this;
+			},
+		});
 	}
 
 	numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
@@ -56,16 +77,20 @@ function parse(input) {
 			++offset;
 		}
 		if (offset >= length) {
-			return makeToken(Token.Type_End, 0);
+			return makeEnd();
 		}
 
-		if ('+-*/()^'.indexOf(c) >= 0) {
-			return makeToken(c);
+		switch (c) {
+			case '+': return makeInfix(50);
+			case '-': return makeInfix(50);
+			case '*': return makeInfix(60);
+			case '/': return makeInfix(60);
+			case '^': return makeInfix(80);
 		}
 
 		if ('0123456789.'.indexOf(c) >= 0) {
 			numberRe.lastIndex = offset;
-			return makeToken(Token.Type_Number, numberRe.exec(input)[0].length);
+			return makeNumber(numberRe.exec(input)[0].length);
 		}
 
 		throw 'Invalid character "' + c + '" at offset ' + offset;
@@ -74,19 +99,19 @@ function parse(input) {
 	///////////////////////////////////////////////////////////////////////////
 	// Syntatic analysis
 
-	function expression(leftOpPrecedence) {		
+	function expression(leftOpPrecedence) {	
 		var node = consume().parseAsPrefix();
 		while (leftOpPrecedence < token.precedence) {
-			node = consume().parseAsInfix(node);
+			node = consume().parseAsSuffix(node);
 		}
-		return left;
+		return node;
 	}
+	
+	///////////////////////////////////////////////////////////////////////////
 
 	// Set token to the first token.
 	consume();
-	while (token.type !== Token.Type_End) {
-		console.log(consume().toString());
-	}
+	return expression(0);
 }
 
-parse(' -123 + 4.56^.78  ');
+console.log(parse('123 + 4.56^.78  ').toString());
