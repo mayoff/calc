@@ -202,4 +202,3 @@ function test(s) {
 	document.body.appendChild(e);
 }
 
-test('--123 + (-4.56)^-.78^2  ');
