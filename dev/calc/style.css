@@ -78,9 +78,13 @@ BODY {
 	padding-right: 3px;
 }
 
-.hint {
+.equalSign {
 	margin-left: 3px;
 	margin-right: 3px;
+	color: #b3b3b3;
+}
+
+.hint {
 	color: #b3b3b3;
 }
 
@@ -96,3 +100,7 @@ BODY {
     font-style: italic;
 }
 
+.endIndicator {
+	font-weight: bold;
+	color: red;
+}
