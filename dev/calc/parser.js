@@ -122,7 +122,15 @@ function parse(input) {
 	infixType('*', 60, { userHtml: '&times;', });
 	infixType('/', 60, { userHtml: '&divide;', });
 	prefixType('-', 80);
-	infixType('^', 90, { isRightAssociative: true, });
+	infixType('^', 90, {
+		isRightAssociative: true,
+		pushUserHtml: function(array) {
+			this.lhs.pushUserHtml(array);
+			array.push('<sup>');
+			this.rhs.pushUserHtml(array);
+			array.push('</sup>');
+		},
+	});
 	simpleType('(', 100, {
 		parseAsPrefix: function() {
 			this.rhs = expression(0);
