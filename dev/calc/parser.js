@@ -79,4 +79,15 @@ Parser = {
 		throw 'Invalid character "' + c + '" at offset ' + this._inputOffset;
 	},
 	
+	///////////////////////////////////////////////////////////////////////////
+	// Syntatic analysis
+
+	expression: function(leftOpPrecedence) {		
+		var node = this._consume().parseAsPrefix();
+		while (leftOpPrecedence < this._token.precedence) {
+			node = this._consume().parseAsInfix(node);
+		}
+		return left;
+	},
+
 };
