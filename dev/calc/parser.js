@@ -74,7 +74,12 @@ function parse(input) {
 				});
 			},
 			toString: function() {
-				return '(' + nodeToString(this.lhs) + ' ' + this.name + ' ' + nodeToString(this.rhs) + ')';
+				return '[' + nodeToString(this.lhs) + ' ' + this.name + ' ' + nodeToString(this.rhs) + ']';
+			},
+			pushUserHtml: function(array) {
+				this.lhs.pushUserHtml(array);
+				array.push(' ', this.userHtml || this.name, ' ');
+				this.rhs.pushUserHtml(array);
 			},
 		});
 		return extend(type, extensions);
@@ -87,27 +92,52 @@ function parse(input) {
 				return this;
 			},
 			toString: function() {
-				return '(' + this.name + ' ' + nodeToString(this.rhs) + ')';
-			}
+				return '[' + this.name + ' ' + nodeToString(this.rhs) + ']';
+			},
+			pushUserHtml: function(array) {
+				array.push(this.userHtml || this.name, ' ');
+				this.rhs.pushUserHtml(array);
+			},
 		});
+		return extend(type, extensions);
 	}
 
 	END = '(end)';
-	simpleType(END);
+	simpleType(END, undefined, {
+		parseAsPrefix: function() { return this; },
+		pushUserHtml: function(array) { array.push('<span class="endIndicator">&#x2038;</span>'); },
+	});
 	
 	NUMBER = '(number)';
 	simpleType(NUMBER, undefined, {
 		toString: function() { return String(this.value); },
+		pushUserHtml: function(array) { array.push(String(this.value)); },
 		parseAsPrefix: function() { return this; },
 	});
-
+	
+	simpleType(')');
 
 	infixType('+', 50);
-	infixType('-', 50);
-	infixType('*', 60);
-	infixType('/', 60);
+	infixType('-', 50, { userHtml: '&minus;', });
+	infixType('*', 60, { userHtml: '&times;', });
+	infixType('/', 60, { userHtml: '&divide;', });
 	prefixType('-', 80);
 	infixType('^', 90, { isRightAssociative: true, });
+	simpleType('(', 100, {
+		parseAsPrefix: function() {
+			this.rhs = expression(0);
+			if (token.name === END) { this.isOpen = true; }
+			else if (token.name == ')') { consume(); }
+			else { throw 'Missing right parenthesis.'; }
+			return this;
+		},
+		toString: function() { return '(' + nodeToString(this.rhs) + (this.isOpen ? '?' : ')'); },
+		pushUserHtml: function(array) {
+			array.push('(');
+			this.rhs.pushUserHtml(array);
+			array.push(this.isOpen ? '<span class="hint">)</span>' : ')');
+		},
+	});
 
 	numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
 
@@ -140,7 +170,7 @@ function parse(input) {
 	///////////////////////////////////////////////////////////////////////////
 	// Syntatic analysis
 
-	function expression(leftOpPrecedence) {	
+	function expression(leftOpPrecedence) {
 		var node = consume().parseAsPrefix();
 		while (leftOpPrecedence < token.precedence) {
 			node = consume().parseAsSuffix(node);
@@ -155,4 +185,13 @@ function parse(input) {
 	return expression(0);
 }
 
-console.log(parse('--123 + -4.56^-.78^2  ').toString());
+function test(s) {
+	var node = parse(s);
+	var fragments = [];
+	node.pushUserHtml(fragments);
+	var e = document.createElement('DIV');
+	e.innerHTML = fragments.join('');
+	document.body.appendChild(e);
+}
+
+test('--123 + (-4.56)^-.78^2  ');
