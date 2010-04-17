@@ -25,6 +25,23 @@ BODY {
 	-webkit-user-select: none;
 }
 
+.buttonDiv {
+	position: relative;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+}
+
+#controls BUTTON {
+	-webkit-appearance: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+
 .button {
 	width: 64px;
 	border-spacing: 0px 0px;
@@ -37,6 +54,7 @@ BODY {
 	border-style: solid;
 	border-width: 0px;
 	overflow: hidden;
+	-webkit-user-select: none;
 }
 
 .operatorButton {

@@ -1,3 +1,10 @@
+HTMLElement.prototype.containsPagePoint = function(x, y) {
+	var me = $(this);
+	var offset = me.offset(), width = me.width(), height = me.height();
+	return (x >= offset.left && x < offset.left + width
+		&& y >= offset.top && y < offset.top + height);
+};
+
 Calc = {
 
 	 parse: function(input) {
@@ -87,6 +94,7 @@ Calc = {
 			var type = simpleType(name, undefined, {
 				finalNode: function() { return this.rhs.finalNode(); },
 				parseAsPrefix: function() {
+					this.isUnary = true;
 					this.rhs = expression(precedence);
 					return this;
 				},
@@ -129,7 +137,16 @@ Calc = {
 		infixType('-', 50, { userHtml: '&minus;', });
 		infixType('*', 60, { userHtml: '&times;', });
 		infixType('/', 60, { userHtml: '&divide;', });
-		prefixType('-', 80);
+		prefixType('-', 80, {
+			pushUserHtml: function(array) {
+				if (!this.isUnary) {
+					this.lhs.pushUserHtml(array);
+					array.push(' ');
+				}
+				array.push(this.userHtml, ' ');
+				this.rhs.pushUserHtml(array);
+			},
+		});
 		infixType('^', 90, {
 			isRightAssociative: true,
 			pushUserHtml: function(array) {
@@ -220,6 +237,7 @@ Calc = {
 
 	transcriptDom: document.getElementById('transcript'),
 	buttons: document.getElementsByClassName('button'),
+	controlsDiv: document.getElementById('controls'),
 
 	// The current equation.
 	currentEquation: {
@@ -233,6 +251,9 @@ Calc = {
 	
 	setCurrentText: function(text) {
 		var eq = this.currentEquation, newNode, fragments;
+		eq.text = text;
+		eq.dom.innerHTML = text;
+		return;
 		try {
 			newNode = this.parse(text);
 			eq.text = text;
@@ -240,6 +261,7 @@ Calc = {
 			fragments = [];
 			eq.node.pushUserHtml(fragments);
 			eq.dom.innerHTML = fragments.join('');
+			this.enableButtons();
 		} catch (e) { }
 	},
 
@@ -249,17 +271,14 @@ Calc = {
 		eq.dom.className = 'equation';
 		this.transcriptDom.appendChild(eq.dom);		
 		this.setCurrentText('');
-		this.enableButtons();
 	},
 	
 	append: function(s) {
 		this.setCurrentText(this.currentEquation.text + s);
-		this.enableButtons();
 	},
 	
 	backspace: function() {
 		this.setCurrentText(this.currentEquation.text.slice(0, -1));
-		this.enableButtons();
 	},
 
 	buttonActions: {
@@ -282,24 +301,52 @@ Calc = {
 		'buttonBackspace': function() { Calc.backspace(); },
 	},
 
+	buttonAtPagePoint: function(x, y) {
+		var i, buttons = this.buttons, l = buttons.length, button;
+		for (i = 0; i < l; ++i) {
+			button = buttons[i];
+			if (button.isEnabled && button.containsPagePoint(x, y))
+				return button;
+		}
+		return null;
+	},
+	
+	handleEvent: function(e) {
+		e.preventDefault(); // prevent scrolling
+		e.stopPropagation();
+		console.log(e.type);
+		Calc.setCurrentText(e.type);
+		return false;
+	},
+
 	initializeButtons: function() {
+		this.enableButtons();
 		var buttons = this.buttons;
-		function onclick() {
-			// this refers to the clicked DOM node.
-			if (this.isEnabled) {
-				Calc.buttonActions[this.id]();
-				Calc.enableButtons();
-				Calc.scrollToBottom();
-			}
+	
+		function ignoreEvent(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			return false;
+		}
+	
+		function ontouch(e) {
+			e.preventDefault(); // stops drag-scrolling
+			e.stopPropagation();
+			if (!e.touches || !e.touches[0])
+				return;
+			var x = e.touches[0].pageX, y = e.touches[0].pageY;
+			var button = Calc.buttonAtPagePoint(x, y);
+			Calc.setCurrentText(e.type + '(' + x + ',' + y + ') ' + (button ? button.id : '(no button)'));
+//			Calc.buttonActions[this.id]();
+//			Calc.enableButtons();
+//			Calc.scrollToBottom();
 		}
 
-		for (var i = 0; i < buttons.length; ++i) {
-			var button = buttons[i];
-			var id = button.id;
-			if (id in Calc.buttonActions) {
-				button.onclick = onclick;
-			}
-		}
+		this.controlsDiv.addEventListener('touchstart', this, true);
+		this.controlsDiv.addEventListener('touchmove', this, true);
+		this.controlsDiv.addEventListener('touchend', this, true);
+		this.controlsDiv.addEventListener('touchcancel', this, true);
+		//this.controlsDiv.addEventListener('selectstart', this, true);
 	},
 	
 	enableButtons: function() {
@@ -309,14 +356,22 @@ Calc = {
 			buttons[i].isEnabled = true;
 		}
 	},
-	
-	scrollToBottom: function() {
+
+	_scrollToBottom: function() {
+		// Force DOM layout update.
+		document.body.offsetTop;
 		document.body.scrollTop = document.body.scrollHeight;
+	},
+
+	scrollToBottom: function() {
+		this._scrollToBottom();
+		//setTimeout(this._scrollToBottom, 0);
 	},
 
 	onLoad: function() {
 		this.initializeButtons();
 		this.startNewEquation();
+		this.scrollToBottom();
 	},
 	
 };
