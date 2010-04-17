@@ -1,9 +1,3 @@
-if (this.console === undefined) {
-	this.console = {
-		log: function(s) { print(s); }
-	}
-}
-
 function parse(input) {
 
 	function beget(base, properties) {
