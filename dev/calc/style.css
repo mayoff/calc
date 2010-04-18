@@ -16,45 +16,51 @@ BODY {
 }
 
 #controls {
-	border-spacing: 0px 0px;
-	border-collapse: separate;
 	padding: 0px;
 	margin: 0px;
 	width: 320px;
-	height: 288px;
+	height: 256px;
+	background: -webkit-gradient(linear, left top, left bottom, from(#66a), to(#77a));
 	-webkit-user-select: none;
 }
 
-.buttonDiv {
+.buttonWrapper {
+	display: inline-block;
 	position: relative;
-	top: 0;
-	left: 0;
-	bottom: 0;
-	right: 0;
-}
-
-#controls BUTTON {
-	-webkit-appearance: none;
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
+	width: 64px;
+	height: 64px;
+	padding: 0;
+	margin: 0;
 }
 
 .button {
-	width: 64px;
-	border-spacing: 0px 0px;
-	border-collapse: separate;
+	display: inline-block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	margin: 2px;
+	-webkit-border-radius: 8px;
+
+	font-family: Helvetica;
+	font-size: 24px;
 	text-align: center;
-	vertical-align: middle;
-	font-size: 32px;
-	margin: 0px;
-	border-color: #666666;
-	border-style: solid;
-	border-width: 0px;
-	overflow: hidden;
-	-webkit-user-select: none;
+
+	border: 1px solid black;
+	-webkit-appearance: none;
+	background: -webkit-gradient(linear, left top, left bottom,
+		from(black), color-stop(.1, #334), color-stop(.5, black), color-stop(.9, #334), to(black));
+	color: #fff;
+	-webkit-box-shadow: 0 1px 3px black;
+	text-shadow: 0 -1px 1px #222;
+}
+
+.buttonLabel {
+	position:absolute;
+	top:0;left:0;bottom:0;right:0;
+	text-align: center;
+	line-height: 56px;
 }
 
 .operatorButton {
@@ -74,10 +80,6 @@ BODY {
 	bottom: 0px;
 	top: 0px;
 	color: white;
-}
-
-.button:hover {
-	text-shadow: blue 0px 0px 6px, blue 0px 0px 6px;
 }
 
 #transcript {

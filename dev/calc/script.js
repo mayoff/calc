@@ -1,8 +1,17 @@
-HTMLElement.prototype.containsPagePoint = function(x, y) {
+Element.prototype.containsPagePoint = function(x, y) {
 	var me = $(this);
 	var offset = me.offset(), width = me.width(), height = me.height();
 	return (x >= offset.left && x < offset.left + width
 		&& y >= offset.top && y < offset.top + height);
+};
+
+Node.prototype.isDescendentOf = function(target) {
+	var node = this;
+	while (true) {
+		if (!node) return false;
+		if (node == target) return true;
+		node = node.parentNode;
+	}
 };
 
 Calc = {
@@ -226,15 +235,6 @@ Calc = {
 		return expression(0);
 	},
 	
-	test: function(s) {
-		var node = this.parse(s);
-		var fragments = [];
-		node.pushUserHtml(fragments);
-		var e = document.createElement('DIV');
-		e.innerHTML = fragments.join('');
-		document.body.appendChild(e);
-	},
-
 	transcriptDom: document.getElementById('transcript'),
 	buttons: document.getElementsByClassName('button'),
 	controlsDiv: document.getElementById('controls'),
@@ -248,7 +248,7 @@ Calc = {
 		// The DOM node displaying the equation.
 		dom: null,
 	},
-	
+
 	setCurrentText: function(text) {
 		var eq = this.currentEquation, newNode, fragments;
 		eq.text = text;
@@ -311,11 +311,30 @@ Calc = {
 		return null;
 	},
 	
+	suppressTouch: false,
+
 	handleEvent: function(e) {
+		if (!e.target.isDescendentOf(this.controlsDiv)) {
+			return true;
+		}
+
 		e.preventDefault(); // prevent scrolling
 		e.stopPropagation();
+		
+		if (window.innerHeight + window.scrollY != document.height) {
+			this._scrollToBottom();
+			this.suppressTouch = true;
+			return false;
+		}
+		
+		if (this.suppressTouch) {
+			if (e.type == 'touchend' || e.type == 'touchcancel')
+				this.suppressTouch = false;
+			return false;
+		}
+		
 		console.log(e.type);
-		Calc.setCurrentText(e.type);
+		Calc.setCurrentText(e.type + ' ' + e.target);
 		return false;
 	},
 
@@ -346,7 +365,7 @@ Calc = {
 		this.controlsDiv.addEventListener('touchmove', this, true);
 		this.controlsDiv.addEventListener('touchend', this, true);
 		this.controlsDiv.addEventListener('touchcancel', this, true);
-		//this.controlsDiv.addEventListener('selectstart', this, true);
+		this.controlsDiv.addEventListener('selectstart', this, true);
 	},
 	
 	enableButtons: function() {
@@ -360,12 +379,12 @@ Calc = {
 	_scrollToBottom: function() {
 		// Force DOM layout update.
 		document.body.offsetTop;
-		document.body.scrollTop = document.body.scrollHeight;
+		this.controlsDiv.scrollIntoView();
 	},
 
 	scrollToBottom: function() {
 		this._scrollToBottom();
-		//setTimeout(this._scrollToBottom, 0);
+		setTimeout(this._scrollToBottom, 0);
 	},
 
 	onLoad: function() {
