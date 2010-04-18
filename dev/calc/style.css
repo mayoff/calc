@@ -45,6 +45,7 @@ BODY {
 	height: 64px;
 	padding: 0;
 	margin: 0;
+//	-webkit-transition: opacity .1s linear; // Too slow on iPhone
 }
 
 .innerButton {
@@ -126,5 +127,8 @@ BODY {
 
 .endIndicator {
 	font-weight: bold;
+}
+
+.current .endIndicator {
 	color: red;
 }

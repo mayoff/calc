@@ -13,6 +13,13 @@ window.isAtBottom = function() {
 
 function nothing() { }
 
+FollowerTypes = {
+	Prefix: 0x1,
+	Suffix: 0x2,
+	Digit: 0x4,
+	Point: 0x8,
+};
+
 Calc = {
 
 	 parse: function(input) {
@@ -94,6 +101,7 @@ Calc = {
 					array.push(' ', this.userHtml || this.name, ' ');
 					this.rhs.pushUserHtml(array);
 				},
+				permissibleFollowers: function() { return this.rhs.permissibleFollowers(); },
 			});
 			return extend(type, extensions);
 		}
@@ -113,6 +121,7 @@ Calc = {
 					array.push(this.userHtml || this.name, ' ');
 					this.rhs.pushUserHtml(array);
 				},
+				permissibleFollowers: function() { return this.rhs.permissibleFollowers(); },
 			});
 			return extend(type, extensions);
 		}
@@ -123,6 +132,9 @@ Calc = {
 		simpleType(END, -1, {
 			parseAsPrefix: function() { return this; },
 			pushUserHtml: function(array) { array.push(endIndicatorHtml); },
+			permissibleFollowers: function() {
+				return FollowerTypes.Prefix | FollowerTypes.Digit | FollowerTypes.Point;
+			},
 		});
 		
 		NUMBER = '(number)';
@@ -130,6 +142,10 @@ Calc = {
 			toString: function() { return this.text; },
 			pushUserHtml: function(array) { array.push(this.text); },
 			parseAsPrefix: function() { return this; },
+			permissibleFollowers: function() {
+				return (FollowerTypes.Suffix | FollowerTypes.Digit |
+					(this.text.indexOf('.') == -1 ? FollowerTypes.Point : 0));
+			},
 		});
 		
 		// POINT is used when input[length-1] === '.' and index[length-2] is not a digit.
@@ -137,6 +153,9 @@ Calc = {
 		simpleType(POINT, undefined, {
 			parseAsPrefix: function() { return this; },
 			pushUserHtml: function(array) { array.push('.', endIndicatorHtml); },
+			permissibleFollowers: function() {
+				return FollowerTypes.Digit;
+			},
 		});
 		
 		simpleType(')');
@@ -164,6 +183,7 @@ Calc = {
 				array.push('</sup>');
 			},
 		});
+
 		simpleType('(', 100, {
 			finalNode: function() {
 				return this.isOpen ? this.rhs.finalNode() : this;
@@ -180,6 +200,9 @@ Calc = {
 				array.push('(');
 				this.rhs.pushUserHtml(array);
 				array.push(this.isOpen ? '<span class="hint">)</span>' : ')');
+			},
+			permissibleFollowers: function() {
+				return this.isOpen ? this.rhs.permissibleFollowers() : FollowerTypes.Suffix;
 			},
 		});
 	
@@ -235,9 +258,10 @@ Calc = {
 	},
 	
 	transcriptDom: document.getElementById('transcript'),
-	buttons: document.getElementsByClassName('button'),
+	buttons: Array.prototype.map.call(document.getElementsByClassName('button'), function(e) { return e; }),
 	controlsDiv: document.getElementById('controls'),
 	controlsMask: document.getElementById('controlsMask'),
+	buttonParensLabel: document.getElementById('buttonParensLabel'),
 
 	// The current equation.
 	currentEquation: {
@@ -264,8 +288,10 @@ Calc = {
 
 	startNewEquation: function() {
 		var eq = this.currentEquation;
+		if (eq.dom)
+			$(eq.dom).removeClass('current');
 		eq.dom = document.createElement('div');
-		eq.dom.className = 'equation';
+		eq.dom.className = 'equation current';
 		this.transcriptDom.appendChild(eq.dom);		
 		this.setCurrentText('');
 	},
@@ -277,27 +303,31 @@ Calc = {
 	backspace: function() {
 		this.setCurrentText(this.currentEquation.text.slice(0, -1));
 	},
+	
+	appendParen: function() {
+		this.setCurrentText(this.currentEquation.text + this.buttonParensLabel.innerHTML);
+	},
 
-	buttonActions: {
-		'button0': function() { Calc.append('0'); },
-		'button1': function() { Calc.append('1'); },
-		'button2': function() { Calc.append('2'); },
-		'button3': function() { Calc.append('3'); },
-		'button4': function() { Calc.append('4'); },
-		'button5': function() { Calc.append('5'); },
-		'button6': function() { Calc.append('6'); },
-		'button7': function() { Calc.append('7'); },
-		'button8': function() { Calc.append('8'); },
-		'button9': function() { Calc.append('9'); },
-		'buttonPoint': function() { Calc.append('.'); },
-		'buttonPlus': function() { Calc.append('+'); },
-		'buttonMinus': function() { Calc.append('-'); },
-		'buttonTimes': function() { Calc.append('*'); },
-		'buttonDivide': function() { Calc.append('/'); },
-		'buttonParens': function() { Calc.appendParen(); },
-		'buttonBackspace': function() { Calc.backspace(); },
-		'buttonExponent':  function() { Calc.append('^'); },
-		'buttonEnter': function() { Calc.startNewEquation(); },
+	buttonTraits: {
+		'button0': { action: function() { Calc.append('0'); }, followerTypes: FollowerTypes.Digit, },
+		'button1': { action: function() { Calc.append('1'); }, followerTypes: FollowerTypes.Digit, },
+		'button2': { action: function() { Calc.append('2'); }, followerTypes: FollowerTypes.Digit, },
+		'button3': { action: function() { Calc.append('3'); }, followerTypes: FollowerTypes.Digit, },
+		'button4': { action: function() { Calc.append('4'); }, followerTypes: FollowerTypes.Digit, },
+		'button5': { action: function() { Calc.append('5'); }, followerTypes: FollowerTypes.Digit, },
+		'button6': { action: function() { Calc.append('6'); }, followerTypes: FollowerTypes.Digit, },
+		'button7': { action: function() { Calc.append('7'); }, followerTypes: FollowerTypes.Digit, },
+		'button8': { action: function() { Calc.append('8'); }, followerTypes: FollowerTypes.Digit, },
+		'button9': { action: function() { Calc.append('9'); }, followerTypes: FollowerTypes.Digit, },
+		'buttonPoint': { action: function() { Calc.append('.'); }, followerTypes: FollowerTypes.Point, },
+		'buttonPlus': { action: function() { Calc.append('+'); }, followerTypes: FollowerTypes.Suffix, },
+		'buttonMinus': { action: function() { Calc.append('-'); }, followerTypes: FollowerTypes.Prefix | FollowerTypes.Suffix, },
+		'buttonTimes': { action: function() { Calc.append('*'); }, followerTypes: FollowerTypes.Suffix, },
+		'buttonDivide': { action: function() { Calc.append('/'); }, followerTypes: FollowerTypes.Suffix, },
+		'buttonParens': { action: function() { Calc.appendParen(); }, },
+		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
+		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
+		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
 	},
 
 	buttonAtPagePoint: function(x, y) {
@@ -361,21 +391,19 @@ Calc = {
 		}
 
 		var button = this.buttonAtPagePoint(x, y);
-		if (button)
+		if (button && button.isEnabled)
 			this.buttonWasClicked(button);
 		return false;
 	},
 	
 	buttonWasClicked: function(button) {
-		(Calc.buttonActions[button.id] || nothing)();
-		Calc.enableButtons();
+		button.traits.action();
 		this.scrollToBottom();
 		return false;
 	},
 
 	initializeButtons: function() {
-		this.enableButtons();
-		var buttons = this.buttons;
+		this.buttons.forEach(function(button) { button.traits = this.buttonTraits[button.id]; }, this);
 	
 		var proxy = { handleEvent: function() { return Calc.handleControlsEvent.apply(Calc, arguments); } };
 		this.controlsDiv.addEventListener('click', proxy, true); // for Safari debugging
@@ -405,11 +433,35 @@ Calc = {
 		document.addEventListener('scroll', proxy, true);
 	},
 	
+	setButtonEnabled: function(button, isEnabled) {
+		button.isEnabled = isEnabled;
+		button.style.opacity = isEnabled ? 1 : .5;
+	},
+
 	enableButtons: function() {
-		var buttons = this.buttons, l = buttons.length;
+		var pf = this.currentEquation.node.permissibleFollowers();
+		var buttons = this.buttons, l = buttons.length, button;
 		for (var i = 0; i < l; ++i) {
-			// xxx use finalNode to determine this
-			buttons[i].isEnabled = true;
+			button = buttons[i];
+			if (button.id == 'buttonEnter') {
+				this.setButtonEnabled(button, this.currentEquation.text.length > 0);
+			}
+			
+			else if (button.id == 'buttonParens') {
+				if (pf & FollowerTypes.Prefix) {
+					this.setButtonEnabled(button, true);
+					this.buttonParensLabel.innerHTML = '(';
+				}
+				else if (pf & FollowerTypes.Suffix) {
+					this.setButtonEnabled(button, true);
+					this.buttonParensLabel.innerHTML = ')';
+				}
+				else this.setButtonEnabled(button, false);
+			}
+			
+			else {
+				this.setButtonEnabled(button, (button.traits.followerTypes & pf) !== 0);
+			}
 		}
 	},
 
