@@ -135,6 +135,7 @@ Calc = {
 			permissibleFollowers: function() {
 				return FollowerTypes.Prefix | FollowerTypes.Digit | FollowerTypes.Point;
 			},
+			value: function(defaultValue) { return defaultValue; },
 		});
 		
 		NUMBER = '(number)';
@@ -146,6 +147,7 @@ Calc = {
 				return (FollowerTypes.Suffix | FollowerTypes.Digit |
 					(this.text.indexOf('.') == -1 ? FollowerTypes.Point : 0));
 			},
+			value: function() { return Number(this.text); },
 		});
 		
 		// POINT is used when input[length-1] === '.' and index[length-2] is not a digit.
@@ -156,14 +158,19 @@ Calc = {
 			permissibleFollowers: function() {
 				return FollowerTypes.Digit;
 			},
+			value: function(defaultValue) { return defaultValue; },
 		});
 		
 		simpleType(')');
 	
-		infixType('+', 50);
-		infixType('-', 50, { userHtml: '&minus;', });
-		infixType('*', 60, { userHtml: '&times;', });
-		infixType('/', 60, { userHtml: '&divide;', });
+		infixType('+', 50, { value: function() { return this.lhs.value() + this.rhs.value(0); }, });
+		infixType('-', 50, { userHtml: '&minus;',
+			value: function() {
+				return (this.lhs ? this.lhs.value() : 0) - this.rhs.value(0);
+			},
+		});
+		infixType('*', 60, { userHtml: '&times;', value: function() { return this.lhs.value() * this.rhs.value(1); }, });
+		infixType('/', 60, { userHtml: '&divide;', value: function() { return this.lhs.value() / this.rhs.value(1); }, });
 		prefixType('-', 80, {
 			pushUserHtml: function(array) {
 				if (!this.isUnary) {
@@ -182,6 +189,7 @@ Calc = {
 				this.rhs.pushUserHtml(array);
 				array.push('</sup>');
 			},
+			value: function() { return Math.pow(this.lhs.value(), this.rhs.value(1)); },
 		});
 
 		simpleType('(', 100, {
@@ -204,6 +212,7 @@ Calc = {
 			permissibleFollowers: function() {
 				return this.isOpen ? this.rhs.permissibleFollowers() : FollowerTypes.Suffix;
 			},
+			value: function(defaultValue) { return this.rhs.value(defaultValue); },
 		});
 	
 		numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
@@ -272,15 +281,33 @@ Calc = {
 		// The DOM node displaying the equation.
 		dom: null,
 	},
+	
+	pushHtmlForValue: function(fragments, value) {
+		if (value === Number.NEGATIVE_INFINITY) {
+			fragments.push('-&#x221e');
+		} else if (value === Number.POSITIVE_INFINITY) {
+			fragments.push('&#x221e');
+		} else if (isNaN(value)) {
+			fragments.push('undefined');
+		} else{
+			fragments.push(value);
+		}
+	},
 
 	setCurrentText: function(text) {
-		var eq = this.currentEquation, newNode, fragments;
+		var eq = this.currentEquation, newNode, fragments, value;
 		try {
 			newNode = this.parse(text);
 			eq.text = text;
 			eq.node = newNode;
 			fragments = [];
 			eq.node.pushUserHtml(fragments);
+			value = eq.node.value();
+			if (value != null) {
+				fragments.push('<span class="result"><span class="equalSign">=</span>');
+				this.pushHtmlForValue(fragments, value);
+				fragments.push('</span><br clear="both" />');
+			}
 			eq.dom.innerHTML = fragments.join('');
 			this.enableButtons();
 		} catch (e) { }
