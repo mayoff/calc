@@ -301,13 +301,12 @@ Calc = {
 	},
 
 	buttonAtPagePoint: function(x, y) {
-		var i, buttons = this.buttons, l = buttons.length, button, jqdiv;
+		var i, buttons = this.buttons, l = buttons.length, button, jq;
 		for (i = 0; i < l; ++i) {
-			// I don't know why, but the button's dimensions are smaller than its enclosing div's.
 			button = buttons[i];
-			jqdiv = $(button.parentNode);
-			var offset = jqdiv.offset();
-			if (x < offset.left || x >= offset.left + jqdiv.width() || y < offset.top || y >= offset.top + jqdiv.height())
+			jq = $(button);
+			var offset = jq.offset();
+			if (x < offset.left || x >= offset.left + jq.width() || y < offset.top || y >= offset.top + jq.height())
 				continue;
 			return button.isEnabled ? button : null;
 		}
