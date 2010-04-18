@@ -38,7 +38,7 @@ BODY {
 	background-color: rgba(100,50,50,.7);
 }
 
-.buttonWrapper {
+.button {
 	display: inline-block;
 	position: relative;
 	width: 64px;
@@ -47,7 +47,7 @@ BODY {
 	margin: 0;
 }
 
-.button {
+.innerButton {
 	display: inline-block;
 	position: absolute;
 	left: 0;
