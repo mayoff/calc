@@ -1,10 +1,3 @@
-Element.prototype.containsPagePoint = function(x, y) {
-	var me = $(this);
-	var offset = me.offset(), width = me.width(), height = me.height();
-	return (x >= offset.left && x < offset.left + width
-		&& y >= offset.top && y < offset.top + height);
-};
-
 Node.prototype.isDescendentOf = function(target) {
 	var node = this;
 	while (true) {
@@ -12,6 +5,10 @@ Node.prototype.isDescendentOf = function(target) {
 		if (node == target) return true;
 		node = node.parentNode;
 	}
+};
+
+window.isAtBottom = function() { 
+	return window.innerHeight + window.scrollY === document.height;
 };
 
 Calc = {
@@ -238,6 +235,7 @@ Calc = {
 	transcriptDom: document.getElementById('transcript'),
 	buttons: document.getElementsByClassName('button'),
 	controlsDiv: document.getElementById('controls'),
+	controlsMask: document.getElementById('controlsMask'),
 
 	// The current equation.
 	currentEquation: {
@@ -302,39 +300,57 @@ Calc = {
 	},
 
 	buttonAtPagePoint: function(x, y) {
-		var i, buttons = this.buttons, l = buttons.length, button;
+		var i, buttons = this.buttons, l = buttons.length, button, jqdiv;
 		for (i = 0; i < l; ++i) {
+			// I don't know why, but the button's dimensions are smaller than its enclosing div's.
 			button = buttons[i];
-			if (button.isEnabled && button.containsPagePoint(x, y))
-				return button;
+			jqdiv = $(button.parentNode);
+			var offset = jqdiv.offset();
+			if (x < offset.left || x >= offset.left + jqdiv.width() || y < offset.top || y >= offset.top + jqdiv.height())
+				continue;
+			return button.isEnabled ? button : null;
 		}
 		return null;
 	},
 	
 	suppressTouch: false,
 
-	handleEvent: function(e) {
-		if (!e.target.isDescendentOf(this.controlsDiv)) {
-			return true;
-		}
+	setControlsMaskVisibility: function() {
+		this.controlsMask.style.opacity = (window.isAtBottom() && !this.suppressTouch) ? 0 : 1;
+	},
 
+	handleScrollEvent: function (e) {
+		this.setControlsMaskVisibility();
+		return true;
+	},
+
+	handleTranscriptEvent: function(e) {
+		this.setControlsMaskVisibility();
+		return true;
+	},
+
+	handleControlsEvent: function(e) {
 		e.preventDefault(); // prevent scrolling
 		e.stopPropagation();
 		
-		if (window.innerHeight + window.scrollY != document.height) {
-			this._scrollToBottom();
+		Calc.setCurrentText(e.type + ' at ' + new Date().getTime());
+		if (!window.isAtBottom()) {
 			this.suppressTouch = true;
+			this.scrollToBottom();
 			return false;
 		}
 		
 		if (this.suppressTouch) {
 			if (e.type == 'touchend' || e.type == 'touchcancel')
 				this.suppressTouch = false;
+			this.setControlsMaskVisibility();
 			return false;
 		}
-		
-		console.log(e.type);
-		Calc.setCurrentText(e.type + ' ' + e.target);
+		$('#buttonFunction')[0].style.color='white';
+
+		var button = this.buttonAtPagePoint(e.touches[0].pageX, e.touches[0].pageY);
+		Calc.setCurrentText([new Date().getTime(), e.type, (button ? button.id : '(no button)')].join(' '));
+		this.scrollToBottom();
 		return false;
 	},
 
@@ -361,11 +377,31 @@ Calc = {
 //			Calc.scrollToBottom();
 		}
 
-		this.controlsDiv.addEventListener('touchstart', this, true);
-		this.controlsDiv.addEventListener('touchmove', this, true);
-		this.controlsDiv.addEventListener('touchend', this, true);
-		this.controlsDiv.addEventListener('touchcancel', this, true);
+		var proxy = { handleEvent: function() { return Calc.handleControlsEvent.apply(Calc, arguments); } };
+		this.controlsDiv.addEventListener('touchstart', proxy, true);
+		this.controlsDiv.addEventListener('touchmove', proxy, true);
+		this.controlsDiv.addEventListener('touchend', proxy, true);
+		this.controlsDiv.addEventListener('touchcancel', proxy, true);
 		this.controlsDiv.addEventListener('selectstart', this, true);
+		
+		proxy = { handleEvent: function(e) { return Calc.handleTranscriptEvent.apply(Calc, arguments); } };
+		this.transcriptDom.addEventListener('touchstart', proxy, false);
+		this.transcriptDom.addEventListener('touchmove', proxy, false);
+		this.transcriptDom.addEventListener('touchend', proxy, false);
+		this.transcriptDom.addEventListener('touchcancel', proxy, false);
+		this.transcriptDom.addEventListener('selectstart', proxy, false);
+		this.transcriptDom.addEventListener('select', proxy, false);
+		this.transcriptDom.addEventListener('gesturestart', proxy, false);
+		this.transcriptDom.addEventListener('gesturechange', proxy, false);
+		this.transcriptDom.addEventListener('gestureend', proxy, false);
+
+		proxy = {
+			handleEvent: function(e) {
+				Calc.setControlsMaskVisibility();
+				return true;
+			},
+		};
+		document.addEventListener('scroll', proxy, true);
 	},
 	
 	enableButtons: function() {
@@ -377,20 +413,23 @@ Calc = {
 	},
 
 	_scrollToBottom: function() {
-		// Force DOM layout update.
 		document.body.offsetTop;
-		this.controlsDiv.scrollIntoView();
+		document.body.scrollTop = document.body.scrollHeight;
+		this.setControlsMaskVisibility();
 	},
 
 	scrollToBottom: function() {
 		this._scrollToBottom();
-		setTimeout(this._scrollToBottom, 0);
+		setTimeout('Calc._scrollToBottom()', 0);
 	},
-
+	
 	onLoad: function() {
 		this.initializeButtons();
 		this.startNewEquation();
+		var b6 = $('#button6');
+		this.setCurrentText([b6.offset().left, b6.offset().top, b6.width(), b6.height()].join(' '));
 		this.scrollToBottom();
+		return true;
 	},
 	
 };
