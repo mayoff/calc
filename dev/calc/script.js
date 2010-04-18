@@ -309,7 +309,6 @@ Calc = {
 				fragments.push('</span><br clear="both" />');
 			}
 			eq.dom.innerHTML = fragments.join('');
-			this.enableButtons();
 		} catch (e) { }
 	},
 
@@ -324,15 +323,15 @@ Calc = {
 	},
 	
 	append: function(s) {
-		this.setCurrentText(this.currentEquation.text + s);
+		this.setCurrentText(this.pretouchText + s);
 	},
 	
 	backspace: function() {
-		this.setCurrentText(this.currentEquation.text.slice(0, -1));
+		this.setCurrentText(this.pretouchText.slice(0, -1));
 	},
 	
 	appendParen: function() {
-		this.setCurrentText(this.currentEquation.text + this.buttonParensLabel.innerHTML);
+		this.setCurrentText(this.pretouchText + this.buttonParensLabel.innerHTML);
 	},
 
 	buttonTraits: {
@@ -373,7 +372,7 @@ Calc = {
 	suppressTouch: false,
 
 	setControlsMaskVisibility: function() {
-		this.controlsMask.style.visibility = (window.isAtBottom() && !this.suppressTouch) ? 'hidden' : 'visible';
+		this.controlsMask.style.opacity = (window.isAtBottom() && !this.suppressTouch) ? 0 : 1;
 	},
 
 	handleScrollEvent: function (e) {
@@ -403,23 +402,38 @@ Calc = {
 			return false;
 		}
 
-		if (e.type != 'touchend' && e.type != 'click')
-			return false;
-			
-		var x, y;
-		if (e.type == 'touchend') {
-			var touch = e.type == 'touchend' ? e.changedTouches[0] : e.touches[0];
-			x = touch.pageX;
-			y = touch.pageY;
+		var isFirstEvent = (e.type === 'touchstart' || e.type === 'click');
+		var isFinalEvent = (e.type === 'touchend' || e.type === 'click');
+		
+		if (isFirstEvent) {
+			this.pretouchText = this.currentEquation.text;
 		}
-		else {
+		
+		else if (e.type === 'touchcancel') {
+			this.setCurrentText(this.pretouchText);
+			this.enableButtons();
+			this.scrollToBottom();
+			return false;
+		}
+
+		var x, y;
+		if (e.type === 'click') {
 			x = e.pageX;
 			y = e.pageY;
 		}
+		else {
+			var touch = e.type === 'touchend' ? e.changedTouches[0] : e.touches[0];
+			x = touch.pageX;
+			y = touch.pageY;
+		}
 
 		var button = this.buttonAtPagePoint(x, y);
-		if (button && button.isEnabled)
-			this.buttonWasClicked(button);
+		if (button && button.isEnabled) {
+			if (button.id !== 'buttonEnter' || isFinalEvent)
+				this.buttonWasClicked(button);
+		}
+		if (isFinalEvent)
+			this.enableButtons();
 		return false;
 	},
 	
@@ -461,8 +475,10 @@ Calc = {
 	},
 	
 	setButtonEnabled: function(button, isEnabled) {
-		button.isEnabled = isEnabled;
-		button.style.opacity = isEnabled ? 1 : .5;
+		if (button.isEnabled !== isEnabled) {
+			button.isEnabled = isEnabled;
+			button.style.opacity = isEnabled ? 1 : .5;
+		}
 	},
 
 	enableButtons: function() {
@@ -507,6 +523,7 @@ Calc = {
 		this.initializeButtons();
 		this.startNewEquation();
 		this.scrollToBottom();
+		this.enableButtons();
 		return true;
 	},
 	
