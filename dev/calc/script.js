@@ -11,6 +11,8 @@ window.isAtBottom = function() {
 	return window.innerHeight + window.scrollY === document.height;
 };
 
+function nothing() { }
+
 Calc = {
 
 	 parse: function(input) {
@@ -118,7 +120,7 @@ Calc = {
 		endIndicatorHtml = '<span class="endIndicator">&#x2038;</span>';
 	
 		END = '(end)';
-		simpleType(END, undefined, {
+		simpleType(END, -1, {
 			parseAsPrefix: function() { return this; },
 			pushUserHtml: function(array) { array.push(endIndicatorHtml); },
 		});
@@ -224,12 +226,12 @@ Calc = {
                 }
                 return node;
         }
-		
+        
 		///////////////////////////////////////////////////////////////////////////
 	
 		// Set token to the first token.
 		consume();
-		return expression(0);
+		return expression(-1);
 	},
 	
 	transcriptDom: document.getElementById('transcript'),
@@ -249,9 +251,6 @@ Calc = {
 
 	setCurrentText: function(text) {
 		var eq = this.currentEquation, newNode, fragments;
-		eq.text = text;
-		eq.dom.innerHTML = text;
-		return;
 		try {
 			newNode = this.parse(text);
 			eq.text = text;
@@ -297,6 +296,8 @@ Calc = {
 		'buttonDivide': function() { Calc.append('/'); },
 		'buttonParens': function() { Calc.appendParen(); },
 		'buttonBackspace': function() { Calc.backspace(); },
+		'buttonExponent':  function() { Calc.append('^'); },
+		'buttonEnter': function() { Calc.startNewEquation(); },
 	},
 
 	buttonAtPagePoint: function(x, y) {
@@ -316,7 +317,7 @@ Calc = {
 	suppressTouch: false,
 
 	setControlsMaskVisibility: function() {
-		this.controlsMask.style.opacity = (window.isAtBottom() && !this.suppressTouch) ? 0 : 1;
+		this.controlsMask.style.visibility = (window.isAtBottom() && !this.suppressTouch) ? 'hidden' : 'visible';
 	},
 
 	handleScrollEvent: function (e) {
@@ -333,7 +334,6 @@ Calc = {
 		e.preventDefault(); // prevent scrolling
 		e.stopPropagation();
 		
-		Calc.setCurrentText(e.type + ' at ' + new Date().getTime());
 		if (!window.isAtBottom()) {
 			this.suppressTouch = true;
 			this.scrollToBottom();
@@ -346,10 +346,30 @@ Calc = {
 			this.setControlsMaskVisibility();
 			return false;
 		}
-		$('#buttonFunction')[0].style.color='white';
 
-		var button = this.buttonAtPagePoint(e.touches[0].pageX, e.touches[0].pageY);
-		Calc.setCurrentText([new Date().getTime(), e.type, (button ? button.id : '(no button)')].join(' '));
+		if (e.type != 'touchend' && e.type != 'click')
+			return false;
+			
+		var x, y;
+		if (e.type == 'touchend') {
+			var touch = e.type == 'touchend' ? e.changedTouches[0] : e.touches[0];
+			x = touch.pageX;
+			y = touch.pageY;
+		}
+		else {
+			x = e.pageX;
+			y = e.pageY;
+		}
+
+		var button = this.buttonAtPagePoint(x, y);
+		if (button)
+			this.buttonWasClicked(button);
+		return false;
+	},
+	
+	buttonWasClicked: function(button) {
+		(Calc.buttonActions[button.id] || nothing)();
+		Calc.enableButtons();
 		this.scrollToBottom();
 		return false;
 	},
@@ -358,26 +378,8 @@ Calc = {
 		this.enableButtons();
 		var buttons = this.buttons;
 	
-		function ignoreEvent(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			return false;
-		}
-	
-		function ontouch(e) {
-			e.preventDefault(); // stops drag-scrolling
-			e.stopPropagation();
-			if (!e.touches || !e.touches[0])
-				return;
-			var x = e.touches[0].pageX, y = e.touches[0].pageY;
-			var button = Calc.buttonAtPagePoint(x, y);
-			Calc.setCurrentText(e.type + '(' + x + ',' + y + ') ' + (button ? button.id : '(no button)'));
-//			Calc.buttonActions[this.id]();
-//			Calc.enableButtons();
-//			Calc.scrollToBottom();
-		}
-
 		var proxy = { handleEvent: function() { return Calc.handleControlsEvent.apply(Calc, arguments); } };
+		this.controlsDiv.addEventListener('click', proxy, true); // for Safari debugging
 		this.controlsDiv.addEventListener('touchstart', proxy, true);
 		this.controlsDiv.addEventListener('touchmove', proxy, true);
 		this.controlsDiv.addEventListener('touchend', proxy, true);
@@ -426,8 +428,6 @@ Calc = {
 	onLoad: function() {
 		this.initializeButtons();
 		this.startNewEquation();
-		var b6 = $('#button6');
-		this.setCurrentText([b6.offset().left, b6.offset().top, b6.width(), b6.height()].join(' '));
 		this.scrollToBottom();
 		return true;
 	},
