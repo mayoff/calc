@@ -327,7 +327,8 @@ Calc = {
 	},
 	
 	backspace: function() {
-		this.setCurrentText(this.pretouchText.slice(0, -1));
+		if (this.pretouchText.length > 0)
+			this.setCurrentText(this.pretouchText.slice(0, -1));
 	},
 	
 	appendParen: function() {
@@ -477,7 +478,7 @@ Calc = {
 	setButtonEnabled: function(button, isEnabled) {
 		if (button.isEnabled !== isEnabled) {
 			button.isEnabled = isEnabled;
-			button.style.opacity = isEnabled ? 1 : .5;
+			button.style.opacity = isEnabled ? 1 : 0;
 		}
 	},
 
