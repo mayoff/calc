@@ -183,7 +183,7 @@ function makeParser() {
 
 		if ('0123456789.'.indexOf(c) >= 0) {
 			numberRe.lastIndex = offset;
-			text = numberRe.exec(input)[0];
+			var text = numberRe.exec(input)[0];
 			offset = numberRe.lastIndex;
 			return beget(tokenTypes[NUMBER], { text: text });
 		}
