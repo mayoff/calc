@@ -11,6 +11,7 @@ function makeParser() {
 		},
 		END = '(end)',
 		NUMBER = '(number)',
+		POINT = '(point)',
 		numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
 	
 	function parse(s) {
@@ -100,6 +101,15 @@ function makeParser() {
 			};
 		},
 	});
+	
+	simpleType(POINT, undefined, {
+		parseAsPrefix: function(defaultValue) {
+			return {
+				number: defaultValue,
+				html: '.<span class="endIndicator">&#x2038;</span>',
+			};
+		},
+	});
 
 	infixType('+', 50, { rightIdentity: 0, computeInfix: function(lhs, rhs) { return lhs + rhs; }, });
 	infixType('-', 50, { rightIdentity: 0, computeInfix: function(lhs, rhs) { return lhs - rhs; }, });
@@ -166,13 +176,18 @@ function makeParser() {
 			return tokenTypes[c];
 		}
 		
+		if (c === '.' && offset === length - 1) {
+			++offset;
+			return tokenTypes[POINT];
+		}
+
 		if ('0123456789.'.indexOf(c) >= 0) {
 			numberRe.lastIndex = offset;
 			text = numberRe.exec(input)[0];
 			offset = numberRe.lastIndex;
 			return beget(tokenTypes[NUMBER], { text: text });
 		}
-
+		
 		throw 'Invalid character "' + c + '" at offset ' + offset;
 	}
 
