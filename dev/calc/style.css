@@ -132,3 +132,7 @@ BODY {
 .current .endIndicator {
 	color: red;
 }
+
+.radical {
+	text-decoration: overline;
+}
