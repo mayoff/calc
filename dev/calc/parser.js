@@ -7,7 +7,7 @@ function makeParser() {
 	var tokenTypes = {},
 		primitiveType = {
 			parseAsPrefix: function() { throw 'Cannot use ' + this.name + ' as a prefix/standalone.'; },
-			parseAsSuffix: function() { throw 'Cannot use ' + this.name + ' as a suffix.'; },
+			parseAsSuffix: function() { throw 'Cannot use ' + this.name + ' as a suffix.'; }
 		},
 		END = '(end)',
 		NUMBER = '(number)',
@@ -23,7 +23,7 @@ function makeParser() {
 		consume();
 		var value = expression(0, null);
 		if (token.name !== END) {
-			throw [ 'Extra stuff after expression', token, ];
+			throw [ 'Extra stuff after expression', token ];
 		}
 		input = null;
 		token = null;
@@ -51,7 +51,7 @@ function makeParser() {
 		} else {
 			type = tokenTypes[name] = beget(primitiveType, {
 				name: name,
-				precedence: precedence,
+				precedence: precedence
 			});
 		}
 		extend(type, extensions);
@@ -64,9 +64,9 @@ function makeParser() {
 				var rhs = expression(this.isRightAssociative ? this.precedence - 1 : this.precedence, this.rightIdentity);
 				return {
 					number: this.computeInfix(lhs.number, rhs.number),
-					html: [ lhs.html, ' ', name, ' ', rhs.html ].join(''),
+					html: [ lhs.html, ' ', name, ' ', rhs.html ].join('')
 				};
-			},
+			}
 		});
 		return extend(type, extensions);
 	}
@@ -77,9 +77,9 @@ function makeParser() {
 				var rhs = expression(precedence, defaultValue);
 				return {
 					number: this.computePrefix(rhs.number),
-					html: [ this.name, ' ', rhs.html ].join(''),
+					html: [ this.name, ' ', rhs.html ].join('')
 				};
-			},
+			}
 		});
 		return extend(type, extensions);
 	}
@@ -88,43 +88,43 @@ function makeParser() {
 		parseAsPrefix: function(defaultValue) {
 			return {
 				number: defaultValue,
-				html: '<span class="endIndicator">&#x2038;</span>',
+				html: '<span class="endIndicator">&#x2038;</span>'
 			};
-		},
+		}
 	});
 	
 	simpleType(NUMBER, undefined, {
 		parseAsPrefix: function(defaultValue) {
 			return {
 				number: Number(text),
-				html: text,
+				html: text
 			};
-		},
+		}
 	});
 	
 	simpleType(POINT, undefined, {
 		parseAsPrefix: function(defaultValue) {
 			return {
 				number: defaultValue,
-				html: '.<span class="endIndicator">&#x2038;</span>',
+				html: '.<span class="endIndicator">&#x2038;</span>'
 			};
-		},
+		}
 	});
 
-	infixType('+', 50, { rightIdentity: 0, computeInfix: function(lhs, rhs) { return lhs + rhs; }, });
-	infixType('-', 50, { rightIdentity: 0, computeInfix: function(lhs, rhs) { return lhs - rhs; }, });
-	infixType('*', 60, { rightIdentity: 1, computeInfix: function(lhs, rhs) { return lhs * rhs; }, });
-	infixType('/', 60, { rightIdentity: 1, computeInfix: function(lhs, rhs) { return lhs / rhs; }, });
-	prefixType('-', 80, { computePrefix: function(rhs) { return -rhs; }, });
+	infixType('+', 50, { rightIdentity: 0, computeInfix: function(lhs, rhs) { return lhs + rhs; } });
+	infixType('-', 50, { rightIdentity: 0, computeInfix: function(lhs, rhs) { return lhs - rhs; } });
+	infixType('*', 60, { rightIdentity: 1, computeInfix: function(lhs, rhs) { return lhs * rhs; } });
+	infixType('/', 60, { rightIdentity: 1, computeInfix: function(lhs, rhs) { return lhs / rhs; } });
+	prefixType('-', 80, { computePrefix: function(rhs) { return -rhs; } });
 	infixType('^', 90, {
 		rightIdentity: 1,
 		parseAsSuffix: function(lhs) {
 			var rhs = expression(this.precedence - 1, this.rightIdentity);
 			return {
 				number: Math.pow(lhs.number, rhs.number),
-				html: [ lhs.html, '<sup>', rhs.html, '</sup>' ].join(''),
+				html: [ lhs.html, '<sup>', rhs.html, '</sup>' ].join('')
 			};
-		},
+		}
 	});
 	infixType('r', 90, {
 		rightIdentity: 1,
@@ -132,23 +132,23 @@ function makeParser() {
 			var rhs = expression(this.precedence - 1, this.rightIdentity);
 			return {
 				number: Math.pow(lhs.number, 1 / rhs.number),
-				html: [ '<sup>', rhs.html, '</sup>&#x221a<span class="radical">', lhs.html, '</span>' ].join(''),
+				html: [ '<sup>', rhs.html, '</sup>&#x221a<span class="radical">', lhs.html, '</span>' ].join('')
 			};
-		},
+		}
 	});
 
 	simpleType('(', 100, {
-		parseAsPrefix: function() {
-			var value = expression(0);
+		parseAsPrefix: function(defaultValue) {
+			var value = expression(0, defaultValue);
 			var isOpen = false;
 			if (token.name === END) { isOpen = true; }
 			else if (token.name == ')') { consume(); }
 			else { throw 'Missing right parenthesis.'; }
 			return {
 				number: value.number,
-				html: [ '(', value.html, isOpen ? '<span class="hint">' : '', ')', isOpen ? '</span>' : '' ].join(''),
+				html: [ '(', value.html, isOpen ? '<span class="hint">' : '', ')', isOpen ? '</span>' : '' ].join('')
 			};
-		},
+		}
 	});
 	simpleType(')');
 
