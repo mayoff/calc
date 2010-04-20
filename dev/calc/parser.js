@@ -96,8 +96,8 @@ function makeParser() {
 	simpleType(NUMBER, undefined, {
 		parseAsPrefix: function(defaultValue) {
 			return {
-				number: Number(text),
-				html: text
+				number: Number(this.text),
+				html: this.text
 			};
 		}
 	});
