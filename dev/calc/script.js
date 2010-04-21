@@ -354,6 +354,7 @@ Calc = {
 		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
 		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
+		'buttonFunction': { action: function() {} }
 	},
 
 	buttonAtPagePoint: function(x, y) {
