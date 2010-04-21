@@ -22,12 +22,52 @@ FollowerTypes = {
 
 Calc = {
 
-	 parse: function(input) {
+	 parse: (function() {
 	
+		// These change on every call to parse.
+		var input, length, offset, token;
+		
+		// These are static.
+		var tokenPrototypes = {},
+			primitivePrototype = {
+				prefixParse: function() { throw 'Cannot use ' + this.name + ' as a prefix/standalone.'; },
+				suffixParse: function() { throw 'Cannot use ' + this.name + ' as a suffix.'; },
+				value: function(defaultValue) { return defaultValue; }
+			},
+			endIndicatorHtml = '<span class="endIndicator">&#x2038;</span>',
+			END = '(end)',
+			NUMBER = '(number)',
+			POINT = '(point)',
+			numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
+
+		// Syntatic analysis.	 More syntatic analysis is found in the prefixParse and suffixParse methods of the parse tree node prototypes.
+
+		function _parse(s) {
+			input = s;
+			length = s.length;
+			offset = 0;
+			consume(); // This initializes token.
+			var node = expression(0);
+			if (token.name != END) {
+				throw 'Extra stuff after expression';
+			}
+			input = token = null;
+			return node;
+		}
+	
+		function expression(leftOpPrecedence) {
+				for (var node = consume().prefixParse(); leftOpPrecedence < token.precedence; ) {
+						node = consume().suffixParse(node);
+				}
+				return node;
+		}
+
+		// Helper functions.
+		
 		function beget(base, properties) {
-			function constructor() {}
-			constructor.prototype = base;
-			return extend(new constructor(), properties);
+			function Constructor() {}
+			Constructor.prototype = base;
+			return extend(new Constructor(), properties);
 		}
 		
 		function extend(object, properties) {
@@ -36,192 +76,143 @@ Calc = {
 			}
 			return object;
 		}
-	
-		///////////////////////////////////////////////////////////////////////////
-		// Lexical analysis
-	
-		var length = input.length,
-			offset = 0,
-			token;
-	
-		function consume() {
-			var consumed = token;
-			token = lex();
-			return consumed;
-		};
-		
-		var tokenTypes = {};
-	
-		var primitiveType = {
-			parseAsPrefix: function() { throw 'Cannot use ' + this.name + ' as a prefix/standalone.'; },
-			parseAsSuffix: function() { throw 'Cannot use ' + this.name + ' as a suffix.'; },
-		};
-		
-		function nodeToString(node) {
-			if (node === null) {
-				return 'null';
-			} else if (node === undefined) {
-				return 'undefined';
-			} else {
-				return node.toString();
-			}
-		}
-		
-		function simpleType(name, precedence, extensions) {
+
+		// Parse tree node prototypes.
+
+		function simple(name, precedence, extensions) {
 			precedence = precedence || 0;
-			var type = tokenTypes[name];
+			var type = tokenPrototypes[name];
 			if (type) {
 				type.precedence = Math.max(type.precedence, precedence);
 			} else {
-				type = tokenTypes[name] = beget(primitiveType, {
+				type = tokenPrototypes[name] = beget(primitivePrototype, {
 					name: name,
-					precedence: precedence,
-					toString: function() { return this.name; },
-					finalNode: function() { return this; },
+					precedence: precedence
 				});
 			}
 			extend(type, extensions);
 			return type;
 		}
-		
-		function infixType(name, precedence, extensions) {
-			var type = simpleType(name, precedence, {
-				finalNode: function() { return this.rhs.finalNode(); },
-				parseAsSuffix: function(lhs) {
-					return extend(this, {
-						lhs: lhs,
-						rhs: expression(this.isRightAssociative ? this.precedence - 1 : this.precedence),
-					});
-				},
-				toString: function() {
-					return '[' + nodeToString(this.lhs) + ' ' + this.name + ' ' + nodeToString(this.rhs) + ']';
-				},
-				pushUserHtml: function(array) {
-					this.lhs.pushUserHtml(array);
-					array.push(' ', this.userHtml || this.name, ' ');
-					this.rhs.pushUserHtml(array);
-				},
-				permissibleFollowers: function() { return this.rhs.permissibleFollowers(); },
-			});
-			return extend(type, extensions);
-		}
-		
-		function prefixType(name, precedence, extensions) {
-			var type = simpleType(name, undefined, {
-				finalNode: function() { return this.rhs.finalNode(); },
-				parseAsPrefix: function() {
+
+		function prefix(name, precedence, extensions) {
+			var type = simple(name, undefined, {
+				prefixParse: function() {
 					this.isUnary = true;
 					this.rhs = expression(precedence);
 					return this;
 				},
-				toString: function() {
-					return '[' + this.name + ' ' + nodeToString(this.rhs) + ']';
+				pushHtml: function(array) {
+					array.push(this.html || this.name, ' ');
+					this.rhs.pushHtml(array);
 				},
-				pushUserHtml: function(array) {
-					array.push(this.userHtml || this.name, ' ');
-					this.rhs.pushUserHtml(array);
+				permissibleFollowers: function() { return this.rhs.permissibleFollowers(); }
+			});
+			return extend(type, extensions);
+		}
+
+		function infix(name, precedence, extensions) {
+			var type = simple(name, precedence, {
+				suffixParse: function(lhs) {
+					return extend(this, {
+						lhs: lhs,
+						rhs: expression(this.isRightAssociative ? this.precedence - 1 : this.precedence)
+					});
 				},
-				permissibleFollowers: function() { return this.rhs.permissibleFollowers(); },
+				pushHtml: function(array) {
+					this.lhs.pushHtml(array);
+					array.push(' ', this.html || this.name, ' ');
+					this.rhs.pushHtml(array);
+				},
+				permissibleFollowers: function() { return this.rhs.permissibleFollowers(); }
 			});
 			return extend(type, extensions);
 		}
 		
-		endIndicatorHtml = '<span class="endIndicator">&#x2038;</span>';
-	
-		END = '(end)';
-		simpleType(END, -1, {
-			parseAsPrefix: function() { return this; },
-			pushUserHtml: function(array) { array.push(endIndicatorHtml); },
+		simple(END, 0, {
+			prefixParse: function() { return this; },
+			pushHtml: function(array) { array.push(endIndicatorHtml); },
 			permissibleFollowers: function() {
 				return FollowerTypes.Prefix | FollowerTypes.Digit | FollowerTypes.Point;
-			},
-			value: function(defaultValue) { return defaultValue; },
+			}
 		});
 		
-		NUMBER = '(number)';
-		simpleType(NUMBER, undefined, {
-			toString: function() { return this.text; },
-			pushUserHtml: function(array) { array.push(this.text); },
-			parseAsPrefix: function() { return this; },
+		simple(NUMBER, undefined, {
+			prefixParse: function() { return this; },
+			value: function() { return Number(this.text); },
+			pushHtml: function(array) { array.push(this.text); },
 			permissibleFollowers: function() {
 				return (FollowerTypes.Suffix | FollowerTypes.Digit |
 					(this.text.indexOf('.') == -1 ? FollowerTypes.Point : 0));
-			},
-			value: function() { return Number(this.text); },
+			}
 		});
 		
 		// POINT is used when input[length-1] === '.' and index[length-2] is not a digit.
-		POINT = '(point)';
-		simpleType(POINT, undefined, {
-			parseAsPrefix: function() { return this; },
-			pushUserHtml: function(array) { array.push('.', endIndicatorHtml); },
-			permissibleFollowers: function() {
-				return FollowerTypes.Digit;
-			},
+		simple(POINT, undefined, {
+			prefixParse: function() { return this; },
 			value: function(defaultValue) { return defaultValue; },
+			pushHtml: function(array) { array.push('.', endIndicatorHtml); },
+			permissibleFollowers: function() { return FollowerTypes.Digit; }
 		});
 		
-		simpleType(')');
-	
-		infixType('+', 50, { value: function() { return this.lhs.value() + this.rhs.value(0); }, });
-		infixType('-', 50, { userHtml: '&minus;',
-			value: function() {
-				return (this.lhs ? this.lhs.value() : 0) - this.rhs.value(0);
-			},
-		});
-		infixType('*', 60, { userHtml: '&times;', value: function() { return this.lhs.value() * this.rhs.value(1); }, });
-		infixType('/', 60, { userHtml: '&divide;', value: function() { return this.lhs.value() / this.rhs.value(1); }, });
-		prefixType('-', 80, {
-			pushUserHtml: function(array) {
+		infix('+', 50, { value: function() { return this.lhs.value() + this.rhs.value(0); } });
+		infix('-', 50);
+		infix('*', 60, { html: '&times;', value: function() { return this.lhs.value() * this.rhs.value(1); } });
+		infix('/', 60, { html: '&divide;', value: function() { return this.lhs.value() / this.rhs.value(1); } });
+		prefix('-', 80, {
+			value: function() { return (this.lhs ? this.lhs.value() : 0) - this.rhs.value(0); },
+			pushHtml: function(array) {
 				if (!this.isUnary) {
-					this.lhs.pushUserHtml(array);
+					this.lhs.pushHtml(array);
 					array.push(' ');
 				}
-				array.push(this.userHtml, ' ');
-				this.rhs.pushUserHtml(array);
-			},
+				array.push('&minus; ');
+				this.rhs.pushHtml(array);
+			}
 		});
-		infixType('^', 90, {
+		infix('^', 90, {
 			isRightAssociative: true,
-			pushUserHtml: function(array) {
-				this.lhs.pushUserHtml(array);
-				array.push('<sup>');
-				this.rhs.pushUserHtml(array);
-				array.push('</sup>');
-			},
 			value: function() { return Math.pow(this.lhs.value(), this.rhs.value(1)); },
+			pushHtml: function(array) {
+				this.lhs.pushHtml(array);
+				array.push('<sup>');
+				this.rhs.pushHtml(array);
+				array.push('</sup>');
+			}
 		});
 
-		simpleType('(', 100, {
-			finalNode: function() {
-				return this.isOpen ? this.rhs.finalNode() : this;
-			},
-			parseAsPrefix: function() {
+		simple('(', 100, {
+			prefixParse: function() {
 				this.rhs = expression(0);
 				if (token.name === END) { this.isOpen = true; }
 				else if (token.name == ')') { consume(); }
 				else { throw 'Missing right parenthesis.'; }
 				return this;
 			},
-			toString: function() { return '(' + nodeToString(this.rhs) + (this.isOpen ? '?' : ')'); },
-			pushUserHtml: function(array) {
+			value: function(defaultValue) { return this.rhs.value(defaultValue); },
+			pushHtml: function(array) {
 				array.push('(');
-				this.rhs.pushUserHtml(array);
+				this.rhs.pushHtml(array);
 				array.push(this.isOpen ? '<span class="hint">)</span>' : ')');
 			},
 			permissibleFollowers: function() {
 				return this.isOpen ? this.rhs.permissibleFollowers() : FollowerTypes.Suffix;
-			},
-			value: function(defaultValue) { return this.rhs.value(defaultValue); },
+			}
 		});
+		simple(')');
 	
-		numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
+		// Lexical analysis.	
 	
+		function consume() {
+			var consumed = token;
+			token = lex();
+			return consumed;
+		}
+
 		function lex() {
 			var c;
 			while (true) {
 				if (offset >= length)
-					return beget(tokenTypes[END]);
+					return beget(tokenPrototypes[END]);
 				c = input[offset];
 				if (c !== ' ')
 					break;
@@ -230,42 +221,27 @@ Calc = {
 			
 			if (c in tokenTypes) {
 				++offset;
-				return beget(tokenTypes[c]);
+				return beget(tokenPrototypes[c]);
 			}
 			
 			if (c === '.' && offset === length - 1) {
 				++offset;
-				return beget(tokenTypes[POINT], { text: c });
+				return beget(tokenPrototypes[POINT], { text: c });
 			}
 	
 			if ('0123456789.'.indexOf(c) >= 0) {
 				numberRe.lastIndex = offset;
-				text = numberRe.exec(input)[0];
+				var text = numberRe.exec(input)[0];
 				offset = numberRe.lastIndex;
-				return beget(tokenTypes[NUMBER], { text: text });
+				return beget(tokenPrototypes[NUMBER], { text: text });
 			}
 			
 			throw 'Invalid character "' + c + '" at offset ' + offset;
 		}
-	
-		///////////////////////////////////////////////////////////////////////////
-		// Syntatic analysis
-	
-        function expression(leftOpPrecedence) {
-                var node = consume().parseAsPrefix();
-                while (leftOpPrecedence < token.precedence) {
-                        node = consume().parseAsSuffix(node);
-                }
-                return node;
-        }
-        
-		///////////////////////////////////////////////////////////////////////////
-	
-		// Set token to the first token.
-		consume();
-		return expression(-1);
-	},
-	
+
+		return _parse;	
+	})(),
+
 	transcriptDom: document.getElementById('transcript'),
 	buttons: Array.prototype.map.call(document.getElementsByClassName('button'), function(e) { return e; }),
 	controlsDiv: document.getElementById('controls'),
@@ -301,7 +277,7 @@ Calc = {
 			eq.text = text;
 			eq.node = newNode;
 			fragments = [];
-			eq.node.pushUserHtml(fragments);
+			eq.node.pushHtml(fragments);
 			value = eq.node.value();
 			if (value != null) {
 				fragments.push('<span class="result"><span class="equalSign">=</span>');
@@ -352,7 +328,7 @@ Calc = {
 		'buttonDivide': { action: function() { Calc.append('/'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonParens': { action: function() { Calc.appendParen(); }, },
 		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
-		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
+		'buttonExponent': { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
 	},
 
