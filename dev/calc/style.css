@@ -21,7 +21,7 @@ BODY {
 	margin: 0px;
 	width: 320px;
 	height: 256px;
-	background: -webkit-gradient(linear, left top, right bottom, from(#66a), color-stop(.6, #ccd), to(#77a));
+	background: #aab;
 	-webkit-user-select: none;
 	-webkit-box-shadow: 0px -1px 2px black;
 }
@@ -45,41 +45,18 @@ BODY {
 	height: 64px;
 	padding: 0;
 	margin: 0;
-//	-webkit-transition: opacity .1s linear; // Too slow on iPhone
-}
-
-.innerButton {
-	display: inline-block;
-	position: absolute;
-	left: 0;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	margin: 2px;
-	-webkit-border-radius: 8px;
-
 	font-family: Helvetica;
 	font-size: 24px;
 	text-align: center;
-
-	border: 1px solid black;
-	-webkit-appearance: none;
-	background: -webkit-gradient(linear, left top, left bottom,
-		from(#222), color-stop(.08, #334), color-stop(.3, #445), color-stop(.5, #445), color-stop(.92, #334), to(#111));
-	color: #fff;
-	-webkit-box-shadow: 0 1px 3px black;
-	text-shadow: 0 -1px 1px #222;
+	background: url(blank.png) top left no-repeat;
+//	-webkit-transition: opacity .1s linear; // Too slow on iPhone
 }
 
 .buttonLabel {
 	position:absolute;
 	top:0;left:0;bottom:0;right:0;
 	text-align: center;
-	line-height: 56px;
-}
-
-.operatorButton {
-	font-weight: bold;
+	line-height: 64px;
 }
 
 .functionButton {
