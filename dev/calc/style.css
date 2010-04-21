@@ -116,6 +116,7 @@ BODY {
 .equation {
 	width: 100%;
 	clear: both;
+	min-height: 23px;
 	padding: 2px;
 	border-top: 1px solid #ddd;
 }
