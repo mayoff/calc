@@ -436,6 +436,9 @@ Calc = {
 				this.enableButtons();
 				this.saveState();
 			}
+		} else if (this.pretouchText !== this.currentEquation.text) {
+			this.setCurrentText(this.pretouchText);
+			this.scrollToBottom();
 		}
 
 		document.body.offsetHeight;
