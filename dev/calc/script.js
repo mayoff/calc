@@ -354,7 +354,7 @@ Calc = {
 		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
 		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
-		'buttonFunction': { action: function() {} }
+		'buttonFunction': { action: function() {}, followerTypes: ~0 }
 	},
 
 	buttonsByLocation: null, // buttonsByLocation[i] is the button at location (i % 5, i / 4) in the button grid
@@ -382,7 +382,11 @@ Calc = {
 		return true;
 	},
 
+	totalTime: 0,
+	timeCount: 0,
+
 	handleControlsEvent: function(e) {
+		var startTime = new Date();
 		e.preventDefault(); // prevent scrolling
 		e.stopPropagation();
 		
@@ -431,6 +435,17 @@ Calc = {
 		}
 		if (isFinalEvent)
 			this.enableButtons();
+		document.body.offsetHeight;
+		var endTime = new Date();
+		if (button.id == 'buttonFunction') {
+			this.currentEquation.dom.innerText = String(this.totalTime / this.timeCount);
+			if (e.type == 'touchend') {
+				this.totalTime = this.timeCount = 0;
+			}
+		} else {
+			this.totalTime += endTime.getTime() - startTime.getTime();
+			this.timeCount++;
+		}
 		return false;
 	},
 	
