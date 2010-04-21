@@ -268,6 +268,8 @@ Calc = {
 
 	setCurrentText: function(text) {
 		var eq = this.currentEquation, newNode, fragments, value;
+		if (text === eq.text)
+			return;
 		try {
 			newNode = this.parse(text);
 			eq.text = text;
