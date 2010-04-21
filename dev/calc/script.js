@@ -18,6 +18,7 @@ FollowerTypes = {
 	Suffix: 0x2,
 	Digit: 0x4,
 	Point: 0x8,
+	CloseParenthesis: 0x10,
 };
 
 Calc = {
@@ -195,7 +196,12 @@ Calc = {
 				array.push(this.isOpen ? '<span class="hint">)</span>' : ')');
 			},
 			permissibleFollowers: function() {
-				return this.isOpen ? this.rhs.permissibleFollowers() : FollowerTypes.Suffix;
+				if (this.isOpen) {
+					var pf = this.rhs.permissibleFollowers();
+					if (pf & FollowerTypes.Suffix) pf |= FollowerTypes.CloseParenthesis;
+					return pf;
+				}
+				else return FollowerTypes.Suffix;
 			}
 		});
 		simple(')');
@@ -332,8 +338,20 @@ Calc = {
 		}
 	},
 
-	appendParen: function() {
-		this.setCurrentText(this.pretouchText + this.buttonParensLabel.innerHTML);
+	appendOpenParenthesis: function() {
+		this.setCurrentText(this.pretouchText + ')');
+	},
+
+	appendCloseParenthesis: function() {
+		this.setCurrentText(this.pretouchText + ')');
+	},
+
+	addParentheses: function() {
+		this.setCurrentText('(' + this.pretouchText + ')');
+	},
+
+	removeParentheses: function() {
+		this.setCurrentText(this.pretouchText.slice(1, -1));
 	},
 
 	buttonTraits: {
@@ -352,7 +370,7 @@ Calc = {
 		'buttonMinus': { action: function() { Calc.append('-'); }, followerTypes: FollowerTypes.Prefix | FollowerTypes.Suffix, },
 		'buttonTimes': { action: function() { Calc.append('*'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonDivide': { action: function() { Calc.append('/'); }, followerTypes: FollowerTypes.Suffix, },
-		'buttonParens': { action: function() { Calc.appendParen(); }, },
+		'buttonParens': { },
 		'buttonBackspace': { action: function(isFinalEvent) { Calc.backspace(isFinalEvent); }, followerTypes: ~0, },
 		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
@@ -458,7 +476,7 @@ Calc = {
 	},
 
 	buttonWasClicked: function(button, isFinalEvent) {
-		button.traits.action(isFinalEvent);
+		button.traits.action.call(this, isFinalEvent);
 		this.scrollToBottom();
 		return false;
 	},
@@ -518,12 +536,23 @@ Calc = {
 				if (pf & FollowerTypes.Prefix) {
 					this.setButtonEnabled(button, true);
 					this.buttonParensLabel.innerHTML = '(';
+					button.traits.action = this.appendOpenParenthesis;
 				}
-				else if (pf & FollowerTypes.Suffix) {
+				else if (pf & FollowerTypes.CloseParenthesis) {
 					this.setButtonEnabled(button, true);
 					this.buttonParensLabel.innerHTML = ')';
+					button.traits.action = this.appendCloseParenthesis;
 				}
-				else this.setButtonEnabled(button, false);
+				else if (this.currentEquation.node.name == '(' && !this.currentEquation.node.isOpen) {
+					this.setButtonEnabled(button, true);
+					this.buttonParensLabel.innerHTML = '<span class="removeParens">(</span>&#x2026;<span class="removeParens">)</span>';
+					button.traits.action = this.removeParentheses;
+				}
+				else {
+					this.setButtonEnabled(button, true);
+					this.buttonParensLabel.innerHTML = '(&#x2026;)';
+					button.traits.action = this.addParentheses;
+				}
 			}
 			
 			else if (button.id === 'buttonBackspace') {

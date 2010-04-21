@@ -110,3 +110,7 @@ BODY {
 .current .endIndicator {
 	color: red;
 }
+
+.removeParens {
+	color: #b3b3b3;
+}
