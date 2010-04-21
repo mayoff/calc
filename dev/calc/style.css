@@ -39,8 +39,8 @@ BODY {
 }
 
 .button {
-	display: inline-block;
-	position: relative;
+	display: block;
+	position: absolute;
 	width: 64px;
 	height: 64px;
 	padding: 0;
@@ -49,7 +49,7 @@ BODY {
 }
 
 .innerButton {
-	display: inline-block;
+	display: block;
 	position: absolute;
 	left: 0;
 	top: 0;
