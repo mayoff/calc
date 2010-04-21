@@ -414,6 +414,9 @@ Calc = {
 		if (button && button.isEnabled) {
 			if (button.id !== 'buttonEnter' || isFinalEvent)
 				this.buttonWasClicked(button);
+		} else if (this.pretouchText !== this.currentEquation.text) {
+			this.setCurrentText(this.pretouchText);
+			this.scrollToBottom();
 		}
 		if (isFinalEvent)
 			this.enableButtons();
