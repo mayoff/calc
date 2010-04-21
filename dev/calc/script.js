@@ -339,7 +339,7 @@ Calc = {
 	},
 
 	appendOpenParenthesis: function() {
-		this.setCurrentText(this.pretouchText + ')');
+		this.setCurrentText(this.pretouchText + '(');
 	},
 
 	appendCloseParenthesis: function() {
