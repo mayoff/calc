@@ -16,9 +16,11 @@ BODY {
 }
 
 #controls {
-	position: relative;
+	position: absolute;
 	padding: 0px;
 	margin: 0px;
+	top: 224px;
+	left: 0px;
 	width: 320px;
 	height: 256px;
 	background: -webkit-gradient(linear, left top, right bottom, from(#66a), color-stop(.6, #ccd), to(#77a));
@@ -88,10 +90,18 @@ BODY {
 }
 
 #transcript {
+	padding-left: 0px;
+	padding-bottom: 0px;
+	padding-right: 0px;
+	padding-top: 20px;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width: 320px;
+	height: 204px;
+	overflow: hidden;
 	font-size: 16px;
-	padding: 0px;
-	padding-top: 224px;
-	width: 100%;
+	width: 320px;
 	color: black;
 	background-color: white;
 }

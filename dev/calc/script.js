@@ -7,7 +7,8 @@ Node.prototype.isDescendentOf = function(target) {
 	}
 };
 
-window.isAtBottom = function() { 
+window.isAtBottom = function() {
+	return true; // xxx debug
 	return window.innerHeight + window.scrollY === document.height;
 };
 
@@ -271,6 +272,7 @@ Calc = {
 	controlsDiv: document.getElementById('controls'),
 	controlsMask: document.getElementById('controlsMask'),
 	buttonParensLabel: document.getElementById('buttonParensLabel'),
+	controlsPageTop: null, // cache of controlsDiv.offsetTop
 
 	// The current equation.
 	currentEquation: {
@@ -354,7 +356,7 @@ Calc = {
 		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
 		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
-		'buttonFunction': { action: function() {} }
+		'buttonFunction': { action: function() { } }
 	},
 
 	buttonAtPagePoint: function(x, y) {
@@ -385,6 +387,9 @@ Calc = {
 		this.setControlsMaskVisibility();
 		return true;
 	},
+	
+	totalTime: null,
+	timeCount: null,
 
 	handleControlsEvent: function(e) {
 		e.preventDefault(); // prevent scrolling
@@ -428,13 +433,27 @@ Calc = {
 			y = touch.pageY;
 		}
 
+		var startTime = new Date();
 		var button = this.buttonAtPagePoint(x, y);
+		var endTime = new Date();
 		if (button && button.isEnabled) {
 			if (button.id !== 'buttonEnter' || isFinalEvent)
 				this.buttonWasClicked(button);
 		}
 		if (isFinalEvent)
 			this.enableButtons();
+			
+		//document.body.offsetTop;
+
+		if (button.id == 'buttonFunction') {
+			this.currentEquation.dom.innerText = String(this.totalTime / this.timeCount);
+			if (e.type == 'touchend') {
+				this.totalTime = this.timeCount = 0;
+			}
+		} else {
+			this.totalTime += endTime.getTime() - startTime.getTime();
+			this.timeCount++;
+		}
 		return false;
 	},
 	
@@ -446,6 +465,8 @@ Calc = {
 
 	initializeButtons: function() {
 		this.buttons.forEach(function(button) { button.traits = this.buttonTraits[button.id]; }, this);
+		this.buttons.forEach(function(button) { button.isEnabled = true; }, this); // xxx debug
+		this.controlsMask.style.visibility = 'hidden'; // xxx debug
 	
 		var proxy = { handleEvent: function() { return Calc.handleControlsEvent.apply(Calc, arguments); } };
 		this.controlsDiv.addEventListener('click', proxy, true); // for Safari debugging
@@ -483,6 +504,7 @@ Calc = {
 	},
 
 	enableButtons: function() {
+		return; // xxx debug
 		var pf = this.currentEquation.node.permissibleFollowers();
 		var buttons = this.buttons, l = buttons.length, button;
 		for (var i = 0; i < l; ++i) {
@@ -516,6 +538,7 @@ Calc = {
 	},
 
 	scrollToBottom: function() {
+		return; // xxx debug
 		this._scrollToBottom();
 		setTimeout('Calc._scrollToBottom()', 0);
 	},
