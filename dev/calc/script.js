@@ -357,17 +357,13 @@ Calc = {
 		'buttonFunction': { action: function() {} }
 	},
 
+	buttonsByLocation: null, // buttonsByLocation[i] is the button at location (i % 5, i / 4) in the button grid
+
 	buttonAtPagePoint: function(x, y) {
-		var i, buttons = this.buttons, l = buttons.length, button, jq;
-		for (i = 0; i < l; ++i) {
-			button = buttons[i];
-			jq = $(button);
-			var offset = jq.offset();
-			if (x < offset.left || x >= offset.left + jq.width() || y < offset.top || y >= offset.top + jq.height())
-				continue;
-			return button.isEnabled ? button : null;
-		}
-		return null;
+		x = Math.floor(x / 64);
+		y = Math.floor((y - this.controlsDiv.offsetTop) / 64);
+		var button = this.buttonsByLocation[5*y + x];
+		return (button && button.isEnabled) ? button : null;
 	},
 	
 	suppressTouch: false,
@@ -445,7 +441,11 @@ Calc = {
 	},
 
 	initializeButtons: function() {
-		this.buttons.forEach(function(button) { button.traits = this.buttonTraits[button.id]; }, this);
+		this.buttonsByLocation = [];
+		this.buttons.forEach(function(button) {
+			button.traits = this.buttonTraits[button.id];
+			this.buttonsByLocation[5 * Math.floor(button.offsetTop / 64) + Math.floor(button.offsetLeft / 64)] = button;
+		}, this);
 	
 		var proxy = { handleEvent: function() { return Calc.handleControlsEvent.apply(Calc, arguments); } };
 		this.controlsDiv.addEventListener('click', proxy, true); // for Safari debugging
