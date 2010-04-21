@@ -278,6 +278,8 @@ Calc = {
 
 	setCurrentText: function(text) {
 		var eq = this.currentEquation, newNode, fragments, value;
+		if (text === eq.text)
+			return;
 		try {
 			newNode = this.parse(text);
 			eq.text = text;
@@ -387,7 +389,7 @@ Calc = {
 
 		var isFirstEvent = (e.type === 'touchstart' || e.type === 'click');
 		var isFinalEvent = (e.type === 'touchend' || e.type === 'click');
-		
+
 		if (isFirstEvent) {
 			this.pretouchText = this.currentEquation.text;
 		}
