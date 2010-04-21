@@ -7,7 +7,7 @@ Node.prototype.isDescendentOf = function(target) {
 	}
 };
 
-window.isAtBottom = function() { 
+window.isAtBottom = function() {
 	return window.innerHeight + window.scrollY === document.height;
 };
 
@@ -23,40 +23,40 @@ FollowerTypes = {
 Calc = {
 
 	 parse: function(input) {
-	
+
 		function beget(base, properties) {
 			function constructor() {}
 			constructor.prototype = base;
 			return extend(new constructor(), properties);
 		}
-		
+
 		function extend(object, properties) {
 			for (key in properties) {
 				object[key] = properties[key];
 			}
 			return object;
 		}
-	
+
 		///////////////////////////////////////////////////////////////////////////
 		// Lexical analysis
-	
+
 		var length = input.length,
 			offset = 0,
 			token;
-	
+
 		function consume() {
 			var consumed = token;
 			token = lex();
 			return consumed;
 		};
-		
+
 		var tokenTypes = {};
-	
+
 		var primitiveType = {
 			parseAsPrefix: function() { throw 'Cannot use ' + this.name + ' as a prefix/standalone.'; },
 			parseAsSuffix: function() { throw 'Cannot use ' + this.name + ' as a suffix.'; },
 		};
-		
+
 		function nodeToString(node) {
 			if (node === null) {
 				return 'null';
@@ -66,7 +66,7 @@ Calc = {
 				return node.toString();
 			}
 		}
-		
+
 		function simpleType(name, precedence, extensions) {
 			precedence = precedence || 0;
 			var type = tokenTypes[name];
@@ -83,7 +83,7 @@ Calc = {
 			extend(type, extensions);
 			return type;
 		}
-		
+
 		function infixType(name, precedence, extensions) {
 			var type = simpleType(name, precedence, {
 				finalNode: function() { return this.rhs.finalNode(); },
@@ -105,7 +105,7 @@ Calc = {
 			});
 			return extend(type, extensions);
 		}
-		
+
 		function prefixType(name, precedence, extensions) {
 			var type = simpleType(name, undefined, {
 				finalNode: function() { return this.rhs.finalNode(); },
@@ -125,9 +125,9 @@ Calc = {
 			});
 			return extend(type, extensions);
 		}
-		
+
 		endIndicatorHtml = '<span class="endIndicator">&#x2038;</span>';
-	
+
 		END = '(end)';
 		simpleType(END, -1, {
 			parseAsPrefix: function() { return this; },
@@ -137,7 +137,7 @@ Calc = {
 			},
 			value: function(defaultValue) { return defaultValue; },
 		});
-		
+
 		NUMBER = '(number)';
 		simpleType(NUMBER, undefined, {
 			toString: function() { return this.text; },
@@ -149,7 +149,7 @@ Calc = {
 			},
 			value: function() { return Number(this.text); },
 		});
-		
+
 		// POINT is used when input[length-1] === '.' and index[length-2] is not a digit.
 		POINT = '(point)';
 		simpleType(POINT, undefined, {
@@ -160,9 +160,9 @@ Calc = {
 			},
 			value: function(defaultValue) { return defaultValue; },
 		});
-		
+
 		simpleType(')');
-	
+
 		infixType('+', 50, { value: function() { return this.lhs.value() + this.rhs.value(0); }, });
 		infixType('-', 50, { userHtml: '&minus;',
 			value: function() {
@@ -214,9 +214,9 @@ Calc = {
 			},
 			value: function(defaultValue) { return this.rhs.value(defaultValue); },
 		});
-	
+
 		numberRe = /[0-9]+(?:\.[0-9]*)?|\.[0-9]+/g;
-	
+
 		function lex() {
 			var c;
 			while (true) {
@@ -227,30 +227,30 @@ Calc = {
 					break;
 				++offset;
 			}
-			
+
 			if (c in tokenTypes) {
 				++offset;
 				return beget(tokenTypes[c]);
 			}
-			
+
 			if (c === '.' && offset === length - 1) {
 				++offset;
 				return beget(tokenTypes[POINT], { text: c });
 			}
-	
+
 			if ('0123456789.'.indexOf(c) >= 0) {
 				numberRe.lastIndex = offset;
 				text = numberRe.exec(input)[0];
 				offset = numberRe.lastIndex;
 				return beget(tokenTypes[NUMBER], { text: text });
 			}
-			
+
 			throw 'Invalid character "' + c + '" at offset ' + offset;
 		}
-	
+
 		///////////////////////////////////////////////////////////////////////////
 		// Syntatic analysis
-	
+
         function expression(leftOpPrecedence) {
                 var node = consume().parseAsPrefix();
                 while (leftOpPrecedence < token.precedence) {
@@ -258,30 +258,26 @@ Calc = {
                 }
                 return node;
         }
-        
+
 		///////////////////////////////////////////////////////////////////////////
-	
+
 		// Set token to the first token.
 		consume();
 		return expression(-1);
 	},
-	
+
 	transcriptDom: document.getElementById('transcript'),
 	buttons: Array.prototype.map.call(document.getElementsByClassName('button'), function(e) { return e; }),
 	controlsDiv: document.getElementById('controls'),
 	controlsMask: document.getElementById('controlsMask'),
 	buttonParensLabel: document.getElementById('buttonParensLabel'),
 
-	// The current equation.
-	currentEquation: {
-		// The text entered for the equation.
-		text: null,
-		// The parse tree of the equation.
-		node: null,
-		// The DOM node displaying the equation.
-		dom: null,
-	},
-	
+	// All equations in the transcript.
+	equations: [],
+
+	// The current equation.  This points to the last element of equations.
+	currentEquation: null,
+
 	pushHtmlForValue: function(fragments, value) {
 		if (value === Number.NEGATIVE_INFINITY) {
 			fragments.push('-&#x221e');
@@ -311,25 +307,44 @@ Calc = {
 			eq.dom.innerHTML = fragments.join('');
 		} catch (e) { }
 	},
+	
+	makeEquationDiv: function() {
+		var dom = document.createElement('div');
+		dom.className = 'equation';
+		this.transcriptDom.appendChild(dom);
+		return dom;
+	},
 
 	startNewEquation: function() {
 		var eq = this.currentEquation;
-		if (eq.dom)
-			$(eq.dom).removeClass('current');
-		eq.dom = document.createElement('div');
+		if (eq) {
+			if (eq.dom) {
+				eq.dom.className = 'equation';
+			}
+			eq.node = null;
+		}
+		eq = this.currentEquation = {
+			text: '',
+			node: null,
+			dom: this.makeEquationDiv()
+		};
 		eq.dom.className = 'equation current';
-		this.transcriptDom.appendChild(eq.dom);		
+		this.equations.push(eq);
 		this.setCurrentText('');
+		if (this.equations.length > 100) {
+			this.transcript.Dom.removeChild(this.equations[0].dom);
+			this.equations.shift();
+		}
 	},
-	
+
 	append: function(s) {
 		this.setCurrentText(this.pretouchText + s);
 	},
-	
+
 	backspace: function() {
 		this.setCurrentText(this.pretouchText.slice(0, -1));
 	},
-	
+
 	appendParen: function() {
 		this.setCurrentText(this.pretouchText + this.buttonParensLabel.innerHTML);
 	},
@@ -365,7 +380,7 @@ Calc = {
 		var button = this.buttonsByLocation[5*y + x];
 		return (button && button.isEnabled) ? button : null;
 	},
-	
+
 	suppressTouch: false,
 
 	setControlsMaskVisibility: function() {
@@ -389,13 +404,13 @@ Calc = {
 		var startTime = new Date();
 		e.preventDefault(); // prevent scrolling
 		e.stopPropagation();
-		
+
 		if (!window.isAtBottom()) {
 			this.suppressTouch = true;
 			this.scrollToBottom();
 			return false;
 		}
-		
+
 		if (this.suppressTouch) {
 			if (e.type == 'touchend' || e.type == 'touchcancel')
 				this.suppressTouch = false;
@@ -405,11 +420,11 @@ Calc = {
 
 		var isFirstEvent = (e.type === 'touchstart' || e.type === 'click');
 		var isFinalEvent = (e.type === 'touchend' || e.type === 'click');
-		
+
 		if (isFirstEvent) {
 			this.pretouchText = this.currentEquation.text;
 		}
-		
+
 		else if (e.type === 'touchcancel') {
 			this.setCurrentText(this.pretouchText);
 			this.enableButtons();
@@ -432,12 +447,15 @@ Calc = {
 		if (button && button.isEnabled) {
 			if (button.id !== 'buttonEnter' || isFinalEvent)
 				this.buttonWasClicked(button);
+			if (isFinalEvent) {
+				this.enableButtons();
+				this.saveState();
+			}
 		}
-		if (isFinalEvent)
-			this.enableButtons();
+
 		document.body.offsetHeight;
 		var endTime = new Date();
-		if (button.id == 'buttonFunction') {
+		if (button && button.id == 'buttonFunction') {
 			this.currentEquation.dom.innerText = String(this.totalTime / this.timeCount);
 			if (e.type == 'touchend') {
 				this.totalTime = this.timeCount = 0;
@@ -448,7 +466,7 @@ Calc = {
 		}
 		return false;
 	},
-	
+
 	buttonWasClicked: function(button) {
 		button.traits.action();
 		this.scrollToBottom();
@@ -461,7 +479,7 @@ Calc = {
 			button.traits = this.buttonTraits[button.id];
 			this.buttonsByLocation[5 * Math.floor(button.offsetTop / 64) + Math.floor(button.offsetLeft / 64)] = button;
 		}, this);
-	
+
 		var proxy = { handleEvent: function() { return Calc.handleControlsEvent.apply(Calc, arguments); } };
 		this.controlsDiv.addEventListener('click', proxy, true); // for Safari debugging
 		this.controlsDiv.addEventListener('touchstart', proxy, true);
@@ -469,7 +487,7 @@ Calc = {
 		this.controlsDiv.addEventListener('touchend', proxy, true);
 		this.controlsDiv.addEventListener('touchcancel', proxy, true);
 		this.controlsDiv.addEventListener('selectstart', this, true);
-		
+
 		proxy = { handleEvent: function(e) { return Calc.handleTranscriptEvent.apply(Calc, arguments); } };
 		this.transcriptDom.addEventListener('touchstart', proxy, false);
 		this.transcriptDom.addEventListener('touchmove', proxy, false);
@@ -489,7 +507,7 @@ Calc = {
 		};
 		document.addEventListener('scroll', proxy, true);
 	},
-	
+
 	setButtonEnabled: function(button, isEnabled) {
 		if (button.isEnabled !== isEnabled) {
 			button.isEnabled = isEnabled;
@@ -505,7 +523,7 @@ Calc = {
 			if (button.id == 'buttonEnter') {
 				this.setButtonEnabled(button, this.currentEquation.text.length > 0);
 			}
-			
+
 			else if (button.id == 'buttonParens') {
 				if (pf & FollowerTypes.Prefix) {
 					this.setButtonEnabled(button, true);
@@ -517,7 +535,7 @@ Calc = {
 				}
 				else this.setButtonEnabled(button, false);
 			}
-			
+
 			else {
 				this.setButtonEnabled(button, (button.traits.followerTypes & pf) !== 0);
 			}
@@ -535,14 +553,61 @@ Calc = {
 		setTimeout('Calc._scrollToBottom()', 0);
 	},
 	
+	STATE_VERSION: '2',
+
+	loadState: function() {
+		var ls = localStorage, version = ls.version || 0;
+		if (version !== this.STATE_VERSION) {
+			this.startNewEquation();
+			return;
+		}
+
+		try {
+			var l = localStorage.count, eq;
+			var eqs = this.equations = [];
+			for (var i = 0; i < l; ++i) {
+				var eq = {
+					text: ls['text' + i],
+					dom: this.makeEquationDiv()
+				};
+				eq.dom.innerHTML = ls['html' + i];
+				eqs.push(eq);
+			}
+			if (eqs.length === 0)  {
+				this.startNewEquation();
+			} else {
+				eq = this.currentEquation = eqs[eqs.length - 1];
+				eq.dom.className = 'equation current';
+				eq.node = this.parse(eq.text);
+			}
+		} catch (e) {
+			console.log(e);
+			this.equations = [];
+			this.startNewEquation();
+		}
+	},
+	
+	saveState: function() {
+		var ls = localStorage, eqs = this.equations, l = eqs.length, eq;
+		ls.clear();
+		ls.version = 0; // Set to actual version below, after all state is saved.
+		ls.count = l;
+		for (var i = 0; i < l; ++i) {
+			eq = eqs[i];
+			ls['text' + i] = eq.text;
+			ls['html' + i] = eq.dom.innerHTML;
+		}
+		ls.version = this.STATE_VERSION;
+	},
+
 	onLoad: function() {
 		this.initializeButtons();
-		this.startNewEquation();
+		this.loadState();
 		this.scrollToBottom();
 		this.enableButtons();
 		return true;
 	},
-	
+
 };
 
 window.addEventListener('load', function() { Calc.onLoad(); }, false);
