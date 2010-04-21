@@ -18,6 +18,7 @@ FollowerTypes = {
 	Suffix: 0x2,
 	Digit: 0x4,
 	Point: 0x8,
+	CloseParenthesis: 0x10
 };
 
 Calc = {
@@ -195,7 +196,12 @@ Calc = {
 				array.push(this.isOpen ? '<span class="hint">)</span>' : ')');
 			},
 			permissibleFollowers: function() {
-				return this.isOpen ? this.rhs.permissibleFollowers() : FollowerTypes.Suffix;
+				if (this.isOpen) {
+					var pf = this.rhs.permissibleFollowers();
+					return pf | ((pf & FollowerTypes.Suffix) ? FollowerTypes.CloseParenthesis : 0);
+				} else {
+					return FollowerTypes.Suffix;
+				}
 			}
 		});
 		simple(')');
@@ -219,7 +225,7 @@ Calc = {
 				++offset;
 			}
 			
-			if (c in tokenTypes) {
+			if (c in tokenPrototypes) {
 				++offset;
 				return beget(tokenPrototypes[c]);
 			}
@@ -330,6 +336,7 @@ Calc = {
 		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
 		'buttonExponent': { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
+		'buttonFunction': { action: function() { } }
 	},
 
 	buttonAtPagePoint: function(x, y) {
@@ -471,11 +478,13 @@ Calc = {
 					this.setButtonEnabled(button, true);
 					this.buttonParensLabel.innerHTML = '(';
 				}
-				else if (pf & FollowerTypes.Suffix) {
+				else if (pf & FollowerTypes.CloseParenthesis) {
 					this.setButtonEnabled(button, true);
 					this.buttonParensLabel.innerHTML = ')';
 				}
-				else this.setButtonEnabled(button, false);
+				else {
+					this.setButtonEnabled(button, false);
+				}
 			}
 			
 			else {
