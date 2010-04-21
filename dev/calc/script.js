@@ -341,8 +341,17 @@ Calc = {
 		this.setCurrentText(this.pretouchText + s);
 	},
 
-	backspace: function() {
-		this.setCurrentText(this.pretouchText.slice(0, -1));
+	backspace: function(isFinalEvent) {
+		if (this.pretouchText.length  > 0) {
+			this.setCurrentText(this.pretouchText.slice(0, -1));
+		} else if (this.equations.length > 1) {
+			var eq = this.currentEquation;
+			this.transcriptDom.removeChild(eq.dom);
+			this.equations.pop();
+			eq = this.currentEquation = this.equations[this.equations.length - 1];
+			eq.dom.className = 'equation current';
+			eq.node = this.parse(eq.text);
+		}
 	},
 
 	appendParen: function() {
@@ -366,7 +375,7 @@ Calc = {
 		'buttonTimes': { action: function() { Calc.append('*'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonDivide': { action: function() { Calc.append('/'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonParens': { action: function() { Calc.appendParen(); }, },
-		'buttonBackspace': { action: function() { Calc.backspace(); }, followerTypes: ~0, },
+		'buttonBackspace': { action: function(isFinalEvent) { Calc.backspace(isFinalEvent); }, followerTypes: ~0, },
 		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
 		'buttonFunction': { action: function() {}, followerTypes: ~0 }
@@ -446,7 +455,7 @@ Calc = {
 		var button = this.buttonAtPagePoint(x, y);
 		if (button && button.isEnabled) {
 			if (button.id !== 'buttonEnter' || isFinalEvent)
-				this.buttonWasClicked(button);
+				this.buttonWasClicked(button, isFinalEvent);
 			if (isFinalEvent) {
 				this.enableButtons();
 				this.saveState();
@@ -520,11 +529,11 @@ Calc = {
 		var buttons = this.buttons, l = buttons.length, button;
 		for (var i = 0; i < l; ++i) {
 			button = buttons[i];
-			if (button.id == 'buttonEnter') {
+			if (button.id === 'buttonEnter') {
 				this.setButtonEnabled(button, this.currentEquation.text.length > 0);
 			}
 
-			else if (button.id == 'buttonParens') {
+			else if (button.id === 'buttonParens') {
 				if (pf & FollowerTypes.Prefix) {
 					this.setButtonEnabled(button, true);
 					this.buttonParensLabel.innerHTML = '(';
@@ -534,6 +543,11 @@ Calc = {
 					this.buttonParensLabel.innerHTML = ')';
 				}
 				else this.setButtonEnabled(button, false);
+			}
+			
+			else if (button.id === 'buttonBackspace') {
+				this.setButtonEnabled(button,
+					this.currentEquation.text.length > 0 || this.equations.length > 1);
 			}
 
 			else {
