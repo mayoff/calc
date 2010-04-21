@@ -344,7 +344,7 @@ Calc = {
 	backspace: function(isFinalEvent) {
 		if (this.pretouchText.length  > 0) {
 			this.setCurrentText(this.pretouchText.slice(0, -1));
-		} else if (this.equations.length > 1) {
+		} else if (isFinalEvent && this.equations.length > 1) {
 			var eq = this.currentEquation;
 			this.transcriptDom.removeChild(eq.dom);
 			this.equations.pop();
@@ -476,8 +476,8 @@ Calc = {
 		return false;
 	},
 
-	buttonWasClicked: function(button) {
-		button.traits.action();
+	buttonWasClicked: function(button, isFinalEvent) {
+		button.traits.action(isFinalEvent);
 		this.scrollToBottom();
 		return false;
 	},
