@@ -21,7 +21,7 @@ BODY {
 	margin: 0px;
 	width: 320px;
 	height: 256px;
-	background: #aab;
+	background: url(controls-backdrop.png) top left no-repeat;
 	-webkit-user-select: none;
 	-webkit-box-shadow: 0px -1px 2px black;
 }
