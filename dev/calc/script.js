@@ -308,7 +308,7 @@ Calc = {
 			eq.node = null;
 		}
 		eq = this.currentEquation = {
-			text: '',
+			text: null,
 			node: null,
 			dom: this.makeEquationDiv()
 		};
