@@ -269,7 +269,7 @@ Calc = {
 			fragments.push('undefined');
 		} else {
 			var s;
-			for (var i = 0; i < 21; ++i) {
+			for (var i = 1; i <= 21; ++i) {
 				s = value.toPrecision(i);
 				if (Number(s) === value)
 					break;
