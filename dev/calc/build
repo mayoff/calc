@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+import re
+import sys
+import base64
+
+def dataurl(type, content):
+    return 'data:' + type + ';base64,' + base64.b64encode(content)
+
+html = file('index.html').read()
+stylesheet = file('style.css').read()
+script = file('script.js').read()
+
+html = re.sub('\n\\s*>', '>', html)
+html = re.sub('\n\\s*/>', '/>', html)
+
+images = {}
+for filename in set(re.findall(r'url\(([^)]+\.png)\)', stylesheet)):
+    stylesheet = stylesheet.replace(filename,
+	dataurl('image/png', file(filename).read()))
+
+stylesheet = re.sub(r'\s+', ' ', stylesheet)
+
+html = re.sub('''<link rel=['"]?stylesheet[^>]*>''',
+    '<style type="text/css">' + stylesheet + '</style>', html)
+
+#html = re.sub('''src=['"]script.js['"]''',
+#    'src="' + dataurl('text/javascript', script) + '"', html)
+html = re.sub('<script[^>]*></script>',
+    '<script type="text/javascript"><!--\n' + script + '\n--></script>',
+    html)
+
+sys.stdout.write('<a href="' + dataurl('text/html', html) + '">Calc</a>\n')
