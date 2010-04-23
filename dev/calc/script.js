@@ -267,7 +267,13 @@ Calc = {
 			fragments.push('&#x221e');
 		} else if (isNaN(value)) {
 			fragments.push('undefined');
-		} else{
+		} else {
+			var s;
+			for (var i = 0; i < 21; ++i) {
+				s = value.toPrecision(i);
+				if (Number(s) === value)
+					break;
+			}
 			fragments.push(value);
 		}
 	},
