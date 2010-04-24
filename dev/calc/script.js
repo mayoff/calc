@@ -380,7 +380,7 @@ Calc = {
 		'buttonBackspace': { action: function(isFinalEvent) { Calc.backspace(isFinalEvent); }, followerTypes: ~0, },
 		'buttonExponent':  { action: function() { Calc.append('^'); }, followerTypes: FollowerTypes.Suffix, },
 		'buttonEnter': { action: function() { Calc.startNewEquation(); }, },
-		'buttonFunction': { action: function() {}, followerTypes: ~0 }
+		'buttonDrag1': { action: function() {}, followerTypes: ~0 }
 	},
 
 	buttonsByLocation: null, // buttonsByLocation[i] is the button at location (i % 5, i / 4) in the button grid
@@ -469,7 +469,7 @@ Calc = {
 
 		document.body.offsetHeight;
 		var endTime = new Date();
-		if (button && button.id == 'buttonFunction') {
+		if (button && button.id == 'buttonDrag1') {
 			this.currentEquation.dom.innerText = String(this.totalTime / this.timeCount);
 			if (e.type == 'touchend') {
 				this.totalTime = this.timeCount = 0;

@@ -52,6 +52,13 @@ BODY {
 //	-webkit-transition: opacity .1s linear; // Too slow on iPhone
 }
 
+#buttonDrag1 {
+	background: url(drag.png) top left no-repeat;
+	font-size: 40px;
+	color: rgb(0, 200, 0);
+	font-weight: bold;
+}
+
 .buttonLabel {
 	position:absolute;
 	top:0;left:0;bottom:0;right:0;
