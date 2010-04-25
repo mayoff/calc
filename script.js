@@ -1,12 +1,3 @@
-Node.prototype.isDescendentOf = function(target) {
-	var node = this;
-	while (true) {
-		if (!node) return false;
-		if (node == target) return true;
-		node = node.parentNode;
-	}
-};
-
 window.isAtBottom = function() {
 	return window.innerHeight + window.scrollY === document.height;
 };
