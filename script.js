@@ -11,8 +11,6 @@ window.isAtBottom = function() {
 	return window.innerHeight + window.scrollY === document.height;
 };
 
-function nothing() { }
-
 FollowerTypes = {
 	Prefix: 0x1,
 	Suffix: 0x2,
