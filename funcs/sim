@@ -1,3 +1,0 @@
-sim () {
-    open '/Developer/Platforms/iPhoneSimulator.platform/Developer/Applications/iPhone Simulator.app'
-}
